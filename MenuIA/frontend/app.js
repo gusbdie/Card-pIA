@@ -24,8 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const formData = new FormData();
             formData.append("texto", texto);
 
-            // Chama o Backend local rodando na porta 8080
-            const response = await fetch("https://cardapia.onrender.com", {
+            // ==========================================
+            // DEFINIÇÃO DA URL DO BACKEND NA NUVEM
+            // ==========================================
+            const BACKEND_URL = "https://cardapia.onrender.com";
+
+            // Chama o Backend usando a variável configurada acima
+            const response = await fetch(`${BACKEND_URL}/api/extract`, {
                 method: "POST",
                 body: formData
             });
