@@ -1,0 +1,2289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>cardapIA - Gerador de Cardápios</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👾</text></svg>">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2d3148; --text: #e2e8f0; --text-muted: #94a3b8; --accent: #7c3aed; }
+        body { background-color: var(--bg); color: var(--text); font-family: system-ui, sans-serif; overflow-x: hidden; }
+        .card { background-color: var(--surface); border: 1px solid var(--border); }
+        .nav-tabs { border-bottom: 1px solid var(--border); }
+        .nav-tabs .nav-link { color: var(--text-muted); border: none; padding: 15px 20px; font-weight: 500; }
+        .nav-tabs .nav-link.active { color: #fff; background: transparent; border-bottom: 3px solid var(--accent); }
+        .nav-tabs .nav-link:hover:not(.active) { color: #fff; border-color: transparent; }
+        .form-control, .form-select { background-color: var(--surface2); border: 1px solid var(--border); color: #fff; }
+        .form-control:focus, .form-select:focus { background-color: var(--surface2); color: #fff; border-color: var(--accent); box-shadow: none; }
+        .form-control::placeholder { color: #6b7280; }
+        
+        .btn-primary { background-color: var(--accent); border: none; }
+        .btn-primary:hover { background-color: #6d28d9; }
+        .table { color: var(--text); font-size: 0.85rem; }
+        .table thead th { background-color: var(--surface2); color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; white-space: nowrap;}
+        .table tbody td { border-bottom: 1px solid var(--border); background-color: transparent; vertical-align: middle; }
+        .table tbody tr:hover td { background-color: #7c3aed15; }
+        
+        .input-cell { background: transparent; border: 1px solid transparent; color: #fff; width: 100%; min-width: 80px; padding: 6px; border-radius: 4px; }
+        .input-cell:focus { border: 1px solid var(--accent); outline: none; background-color: var(--surface2); }
+        select.input-cell { appearance: auto; }
+        select.input-cell option { background-color: var(--surface2); color: white; }
+
+        .dropzone-box { border: 1px dashed var(--border); background-color: var(--surface2); cursor: pointer; transition: 0.2s; }
+        .dropzone-box:hover { border-color: var(--accent); background-color: #7c3aed15; }
+        
+        .file-chip { display: inline-flex; align-items: center; background-color: var(--surface); border: 1px solid var(--border); padding: 6px 12px; border-radius: 20px; font-size: 13px; margin-right: 8px; margin-bottom: 8px; color: white;}
+        .file-chip span { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+        .btn-remove-file { background: none; border: none; color: #ef4444; font-weight: bold; padding: 0; cursor: pointer; }
+        
+        .summary-card { background-color: var(--surface2); border-radius: 8px; padding: 15px; text-align: center; border: 1px solid var(--border); }
+        .summary-number { font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1; margin-bottom: 5px; }
+        .summary-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-add-row { background-color: var(--surface2); border: 1px solid var(--border); color: white; width: 100%; padding: 10px; border-radius: 6px; transition: 0.2s;}
+        .btn-add-row:hover { background-color: var(--surface); border-color: var(--accent); }
+
+        .img-preview-card { background-color: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; position: relative;}
+        .img-preview { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 10px; }
+        .btn-remove-preview { position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px;}
+        .img-thumb-table { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border);}
+        .preview-mini { width: 24px; height: 24px; object-fit: cover; border-radius: 4px; margin-right: 8px; cursor: pointer; transition: 0.2s; }
+        .preview-mini:hover { transform: scale(1.1); }
+
+        .table-img-container { display: flex; align-items: center; gap: 8px; min-width: 240px; }
+        .table-img-wrapper { position: relative; display: inline-block; width: 32px; height: 32px; flex-shrink: 0; }
+        .table-img-preview { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; cursor: pointer; position: absolute; top: 0; left: 0; }
+        .table-img-wrapper:hover .table-img-preview { transform: scale(5.5); z-index: 9999; box-shadow: 0 10px 30px rgba(0,0,0,0.8); border-color: var(--accent); transform-origin: center left; }
+        .table-img-placeholder { width: 32px; height: 32px; border: 1px dashed var(--border); border-radius: 4px; flex-shrink: 0; }
+        .table-img-loading { width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0; display:flex; align-items:center; justify-content:center; background-color: var(--surface); border: 1px solid var(--border); color: var(--accent); }
+
+        #successToast { transition: opacity 0.5s ease-in-out; z-index: 1060; }
+
+        #loginScreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--bg); z-index: 10000; display: flex; align-items: center; justify-content: center; }
+        .login-card { background-color: var(--surface); border: 1px solid var(--border); padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .domain-tag { display: inline-block; background-color: #3b82f630; color: #60a5fa; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; margin-right: 5px; margin-bottom: 5px;}
+        .key-tag { display: inline-block; background-color: #eab30830; color: #fde047; padding: 4px 10px; border-radius: 12px; font-size: 0.8rem; margin-right: 5px; margin-bottom: 5px;}
+        
+        .action-btn-row { display: flex; gap: 6px; margin-top: 6px;}
+        .action-btn-row .btn { padding: 4px 10px; font-size: 14px;}
+        
+        .btn-outline-light.active-gear { background-color: #f8f9fa; color: #000; }
+
+        .custom-modal-backdrop { position: fixed; top:0; left:0; width:100vw; height:100vh; background: rgba(0,0,0,0.6); z-index: 100000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px);}
+        .custom-modal-box { background: var(--surface); border: 1px solid var(--border); padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+    
+    <script>
+        if(localStorage.getItem('menu_ia_user')) {
+            document.write('<style>#loginScreen { display: none !important; }</style>');
+        }
+    </script>
+</head>
+<body>
+
+    <div id="viewAsBanner" class="d-none bg-warning text-dark text-center py-2 fw-bold" style="position:fixed; top:0; width:100%; z-index:100000; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+        👁️ Visualizando como '<span id="viewAsEmail"></span>'
+        <button class="btn btn-sm btn-dark ms-3 fw-bold" onclick="sairVisualizacao()">Sair do Modo</button>
+    </div>
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <h3 class="text-white mb-4 fw-bold"><span style="color: var(--accent);">cardap</span>IA 👾</h3>
+            <p class="text-white small mb-4">Realize seu login para acesso ao portal. Caso não possua, solicite a um administrador.</p>
+            
+            <div class="text-start mb-3">
+                <label class="text-white small fw-bold mb-1">E-mail</label>
+                <input type="email" id="loginEmail" class="form-control" placeholder="usuario@email.com">
+            </div>
+            <div class="text-start mb-4">
+                <label class="text-white small fw-bold mb-1">Senha <span class="text-info fw-normal">(vazio se usar domínio da empresa)</span></label>
+                <input type="password" id="loginPassword" class="form-control" placeholder="••••••••">
+            </div>
+            
+            <div id="loginError" class="d-none text-danger small fw-bold mb-3">E-mail ou senha incorretos!</div>
+            
+            <button class="btn btn-primary w-100 fw-bold py-2 mb-3" onclick="fazerLogin()" id="btnLogin">Entrar no Sistema</button>
+            <div id="loginLoading" class="d-none text-warning small spinner-border spinner-border-sm"></div>
+        </div>
+    </div>
+
+    <div id="customDialogContainer" class="d-none custom-modal-backdrop">
+        <div class="custom-modal-box">
+            <h5 id="cdTitle" class="text-white fw-bold mb-3">Título</h5>
+            <p id="cdMessage" class="text-white small mb-4" style="white-space: pre-wrap;">Mensagem</p>
+            
+            <div id="cdInputs" class="mb-4 d-none">
+                <label id="cdLabel1" class="text-white small fw-bold mb-1 d-none">Input 1</label>
+                <input type="text" id="cdInput1" class="form-control text-white mb-3 d-none">
+                
+                <label id="cdLabel2" class="text-white small fw-bold mb-1 d-none">Input 2</label>
+                <input type="text" id="cdInput2" class="form-control text-white d-none">
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <button id="cdBtnCancel" class="btn btn-outline-secondary text-white fw-bold">Cancelar</button>
+                <button id="cdBtnConfirm" class="btn btn-primary fw-bold">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalImportSelection" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background-color: var(--surface); border: 1px solid var(--border);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-white fw-bold">📥 Salvar Links Externos</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-white-50 small mb-3">Selecione as imagens já presentes na planilha que deseja salvar no banco de dados da equipe. Você também pode renomeá-las abaixo se necessário:</p>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-borderless align-middle text-white small">
+                            <thead>
+                                <tr class="text-white-50">
+                                    <th style="width: 40px;"><input type="checkbox" id="selectAllImports" checked onchange="toggleSelectAllImports(this)"></th>
+                                    <th style="width: 60px;">Img</th>
+                                    <th>Nome a ser salvo no Banco</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyImportSelection"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-primary w-100 fw-bold" onclick="confirmarImportacaoExterna()">Salvar Imagens no Banco</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalApiKeys" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content" style="background-color: var(--surface); border: 1px solid var(--border);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-white fw-bold">📎 Chaves de API (Gemini)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-white-50 small mb-4">Adicione chaves de backup. O sistema fará um rodízio (sorteio) automático delas nas extrações para evitar cota excedida da chave original.</p>
+                    
+                    <div class="form-check form-switch mb-3 border-bottom border-secondary pb-3">
+                        <input class="form-check-input" type="checkbox" id="toggleApiRotation" onchange="alterarConfigRotacao(this.checked)">
+                        <label class="form-check-label text-warning fw-bold small" for="toggleApiRotation">Usar rodízio de chaves extras</label>
+                    </div>
+
+                    <div class="d-flex gap-2 mb-3">
+                        <input type="text" id="newApiKeyInput" class="form-control form-control-sm text-white" placeholder="AIzaSy...">
+                        <button class="btn btn-sm btn-primary fw-bold" style="background: var(--accent); border:none;" onclick="adicionarApiKey()">Add</button>
+                    </div>
+                    <div id="apiKeysListContainer" class="d-flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasAudit" style="background-color: var(--surface); color: white; border-right: 1px solid var(--border); width: 450px;">
+        <div class="offcanvas-header border-bottom border-secondary pb-3">
+            <h5 class="offcanvas-title fw-bold">📜 Registro de Auditoria</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body" style="font-size: 0.85rem;">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <select id="auditFilter" class="form-select form-select-sm text-white w-auto" style="background-color: var(--surface2); border: 1px solid var(--border);" onchange="renderizarAuditoria()">
+                    <option value="todos">Todos os Registros</option>
+                    <option value="usuarios">Usuários (Novos/Bloqueios)</option>
+                    <option value="imagens">Imagens (Exclusão/Edição)</option>
+                    <option value="sistema">Acesso / Sistema</option>
+                </select>
+                <button id="btnLimparAuditoria" class="btn btn-sm btn-outline-danger d-none fw-bold" onclick="limparTodaAuditoria()">Limpar Tudo</button>
+            </div>
+            <p class="text-white-50 mb-3" style="font-size: 11px;">* Registros com mais de 8 dias são excluídos automaticamente da nuvem para economizar espaço.</p>
+            
+            <div id="auditListContainer"></div>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasUsers" style="background-color: var(--surface); color: white; border-left: 1px solid var(--border); width: 420px;">
+        <div class="offcanvas-header border-bottom border-secondary pb-3">
+            <h5 class="offcanvas-title fw-bold">⚙️ Configurações & Equipe</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            
+            <div class="mb-4 admin-master-only d-none">
+                <button class="btn btn-sm btn-outline-info w-100 fw-bold mb-2" onclick="document.getElementById('domainCreatePanel').classList.toggle('d-none')">➕ Novo Domínio Permitido</button>
+                <div id="domainCreatePanel" class="d-none p-3 border border-info rounded mb-2" style="background: #0ea5e915;">
+                    <p class="text-white small" style="font-size:12px;">E-mails com estes domínios entram sem senha.</p>
+                    <div class="d-flex gap-2">
+                        <input type="text" id="newDomainInput" class="form-control form-control-sm text-white" placeholder="Ex: @empresa.com">
+                        <button class="btn btn-sm btn-primary fw-bold" onclick="adicionarDominio()">Salvar</button>
+                    </div>
+                </div>
+                <div id="domainListContainer"></div>
+            </div>
+
+            <hr class="border-secondary admin-master-only d-none">
+
+            <div class="mb-4">
+                <button class="btn btn-sm btn-outline-success w-100 fw-bold mb-2" onclick="document.getElementById('userCreatePanel').classList.toggle('d-none')">➕ Adicionar Novo Usuário</button>
+                <div id="userCreatePanel" class="d-none p-3 border border-success rounded" style="background: #22c55e15;">
+                    <input type="email" id="newUseEmail" class="form-control form-control-sm mb-2 text-white" placeholder="E-mail">
+                    <input type="password" id="newUserPass" class="form-control form-control-sm mb-2 text-white" placeholder="Senha">
+                    <select id="newUserRole" class="form-select form-select-sm mb-3 text-white">
+                        <option value="user">Operador (Comum)</option>
+                        <option value="admin">Administrador (Total)</option>
+                    </select>
+                    <button class="btn btn-success btn-sm w-100 fw-bold" onclick="adicionarUsuario()">Cadastrar Usuário</button>
+                </div>
+            </div>
+
+            <hr class="border-secondary">
+
+            <h6 class="fw-bold text-info small text-uppercase mb-3">👥 Gerenciar Usuários</h6>
+            <select id="userFilterSelect" class="form-select form-select-sm mb-3 text-white" onchange="renderizarListaUsuarios()">
+                <option value="recentes">Mais Recentes</option>
+                <option value="antigos">Mais Antigos</option>
+                <option value="admins">Somente Admins</option>
+                <option value="users">Somente Operadores</option>
+                <option value="az">Alfabética (A-Z)</option>
+                <option value="za">Alfabética (Z-A)</option>
+            </select>
+            
+            <div id="usersListContainer"></div>
+
+            <hr class="border-secondary mt-4">
+
+            <button class="btn btn-sm btn-outline-danger w-100 fw-bold text-start d-flex justify-content-between align-items-center" onclick="document.getElementById('blockedUsersContainer').classList.toggle('d-none')">
+                <span>🚫 Usuários Bloqueados</span>
+                <span id="blockedCountBadge" class="badge bg-danger rounded-pill">0</span>
+            </button>
+            <div id="blockedUsersContainer" class="d-none mt-2 p-2 border border-danger rounded" style="background: #ef444410;"></div>
+
+        </div>
+    </div>
+
+    <div id="mainAppWrapper" style="transition: margin-top 0.2s;">
+        <div class="container-fluid px-4 pt-3" style="background-color: var(--surface) !important; border-bottom: 1px solid var(--border);">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="text-white mb-0"><span style="color: var(--accent);">cardap</span>IA 👾</h4>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <button id="btnAuditPanel" class="btn btn-sm btn-outline-info d-none me-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAudit" title="Auditoria">📜</button>
+                    <button id="btnApiKeys" class="btn btn-sm btn-outline-light d-none admin-master-only me-2" type="button" data-bs-toggle="modal" data-bs-target="#modalApiKeys" title="Gerenciar Chaves API">📎</button>
+
+                    <div class="d-flex align-items-center bg-dark px-3 py-1 rounded border border-secondary" id="userBadgeContainer">
+                        <span id="userBadgeMaster" class="badge bg-warning text-dark me-2 d-none">Master</span>
+                        <span id="userBadgeAdmin" class="badge bg-danger me-2 d-none">Admin</span>
+                        <span class="text-white small fw-bold" id="userDisplayInfo"></span>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-info ms-2" onclick="alterarMinhaSenha()" title="Alterar Minha Senha">🔑</button>
+                    <button class="btn btn-sm btn-outline-light admin-only d-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasUsers" title="Equipe">⚙️</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="fazerLogout()">Sair</button>
+                </div>
+            </div>
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#cardapio" type="button">🍽️ Cardápio</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#adicionais" type="button">➕ Adicionais</button></li>
+                <li class="nav-item" id="navItemImagens"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#imagens" type="button">🖼️ Imagens</button></li>
+            </ul>
+        </div>
+
+        <div id="globalImgProgress" class="position-fixed top-0 start-50 translate-middle-x mt-3 p-2 d-none" style="z-index: 1060; width: 100%; max-width: 450px; text-align: center;">
+            <div class="alert alert-info shadow-lg border-0 text-dark fw-bold mb-0 d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="spinner-border spinner-border-sm me-2"></div>
+                    ✨ Processando: <span id="imgProgressCount" class="ms-2">0/0</span>
+                </div>
+                <button class="btn btn-sm btn-danger fw-bold ms-3" onclick="cancelarGeracaoImagens()">⏹️ Cancelar</button>
+            </div>
+        </div>
+        
+        <div id="globalImgComplete" class="position-fixed top-0 start-50 translate-middle-x mt-3 p-2 d-none" style="z-index: 1060; width: 100%; max-width: 450px; text-align: center;">
+            <div class="alert alert-success shadow-lg border-0 text-dark fw-bold mb-0 d-flex align-items-center justify-content-center">
+                <span style="font-size: 1.2rem; margin-right: 10px;">✅</span> Ação concluída com sucesso! (Clique para fechar)
+            </div>
+        </div>
+
+        <div id="successToast" class="position-fixed top-0 end-0 p-4 d-none" style="z-index: 1055;">
+            <div class="alert alert-success shadow-lg border-0 text-dark fw-bold d-flex align-items-center">
+                <span style="font-size: 1.2rem; margin-right: 10px;">✨</span> Ação realizada com sucesso!
+            </div>
+        </div>
+
+        <div class="container-fluid px-4 py-4 tab-content" id="myTabContent">
+            
+            <div class="tab-pane fade show active" id="cardapio">
+                <div class="card p-4 mb-4 rounded-3 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h6 class="text-white mb-0 fw-bold">📥 ENTRADA DE DADOS</h6>
+                        <div class="form-check form-switch mb-0" id="wrapUseAIToggle">
+                            <input class="form-check-input" type="checkbox" id="useAIToggle" checked>
+                            <label class="form-check-label text-white small fw-bold" for="useAIToggle">✨Revisão por IA</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="dropzone-box p-3 rounded text-center" onclick="document.getElementById('fileInput').click()">
+                            <p class="mb-0 text-white fw-bold">📄 Enviar Arquivo Base (PDF, Excel, JPG, PNG)</p>
+                            <small class="text-white">Imagens, PDF ou Planilhas do cardápio para leitura.</small>
+                            <input type="file" id="fileInput" accept=".pdf, image/*, .xlsx, .xls, .csv" multiple class="d-none">
+                        </div>
+                        <div id="fileListContainer" class="mt-3"></div> 
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-white fw-bold small">Ou cole o cardápio em texto</label>
+                        <textarea id="textInput" class="form-control text-white" rows="3" placeholder="Cole aqui o texto do cardápio..."></textarea>
+                    </div>
+
+                    <div class="p-3 mb-4 rounded" style="background-color: var(--surface2); border: 1px solid var(--border);">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="pizzaToggle">
+                            <label class="form-check-label text-white fw-bold" for="pizzaToggle">🍕 Possui Pizza?</label>
+                        </div>
+                        
+                        <div id="pizzaOptionsPanel" class="d-none border-start border-secondary ps-3 mb-3 ms-2">
+                            <div class="d-flex align-items-center mb-2 gap-2">
+                                <label class="text-white small mb-0">Quantos sabores por tamanho?</label>
+                                <input type="number" id="pizzaSabores" class="form-control form-control-sm w-25" value="2" min="1">
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="pizzaDocesToggle">
+                                <label class="form-check-label text-white small" for="pizzaDocesToggle">Divisão de sabores salgados/doces?</label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-4 flex-wrap mt-4 border-top border-secondary pt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="variacoesToggle">
+                                <label class="form-check-label text-white small" for="variacoesToggle">Considerar variações como produtos separados</label>
+                            </div>
+                            
+                            <div class="form-check form-switch" id="wrapAutoLinkToggle">
+                                <input class="form-check-input" type="checkbox" id="autoLinkImgToggle" checked>
+                                <label class="form-check-label text-info fw-bold small" for="autoLinkImgToggle">🔗 Vincular imagens da nuvem automaticamente</label>
+                            </div>
+
+                            <div class="form-check form-switch" id="wrapAutoGenToggle">
+                                <input class="form-check-input" type="checkbox" id="autoGenerateImgToggle" checked>
+                                <label class="form-check-label text-warning fw-bold small" for="autoGenerateImgToggle">✨ Gerar imagens com IA para novos itens</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <button id="processButton" class="btn btn-primary px-4 fw-bold">🔍 Processar Cardápio</button>
+                        <button id="clearButton" class="btn btn-outline-secondary text-white">🗑️ Limpar Tudo</button>
+                        <div id="loading" class="d-none ms-3 text-warning small spinner-border spinner-border-sm"></div>
+                        <span id="loadingText" class="d-none text-warning small ms-2">Processando, aguarde...</span>
+                    </div>
+                </div>
+
+                <div class="card p-4 rounded-3 shadow-sm overflow-hidden mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h6 class="text-white mb-0 fw-bold">📄 Resultado — Produtos <span id="prodCounter" class="text-muted fw-normal ms-2">0 produto(s)</span></h6>
+                        <button id="btnGerarFaltantesProd" class="btn btn-warning btn-sm fw-bold text-dark d-none" onclick="gerarImagensFaltantesEmLote()">✨ Gerar Imagens Faltantes</button>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3 p-2 rounded" style="background-color: var(--surface2);">
+                        <span class="text-white small fw-bold me-3">⚙️ Colunas opcionais:</span>
+                        <div class="form-check me-3">
+                            <input class="form-check-input" type="checkbox" id="colPesavel" onchange="renderizarTabelas()">
+                            <label class="form-check-label text-white small" for="colPesavel">Produto Pesável</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="colLocalImp" onchange="renderizarTabelas()">
+                            <label class="form-check-label text-white small" for="colLocalImp">Local de Impressão</label>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive border border-secondary rounded">
+                        <table class="table table-borderless align-middle mb-0" style="min-width: 1400px;">
+                            <thead><tr id="theadProdutos"></tr></thead>
+                            <tbody id="tbodyProdutos">
+                                <tr><td colspan="13" class="text-center text-white py-5">🍽️ Nenhum produto ainda. Insira dados e clique em "Processar Cardápio".</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <button class="btn-add-row mt-2" onclick="adicionarProduto()">+ Adicionar produto</button>
+
+                    <div class="mt-4 pt-3 border-top border-secondary">
+                        <button class="btn btn-success btn-sm fw-bold" onclick="baixarCSV('produtos')">⬇️ Baixar Produtos CSV</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="adicionais">
+                <div class="card p-4 rounded-3 shadow-sm overflow-hidden mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h6 class="text-white mb-0 fw-bold">➕ Grupos de Adicionais <span id="adicCounter" class="text-muted fw-normal ms-2">0 adicional(is)</span></h6>
+                        <button id="btnGerarFaltantesAdic" class="btn btn-warning btn-sm fw-bold text-dark d-none" onclick="gerarImagensFaltantesEmLote()">✨ Gerar Imagens Faltantes</button>
+                    </div>
+                    
+                    <div class="d-flex align-items-center mb-3 p-2 rounded" style="background-color: var(--surface2);">
+                        <span class="text-white small fw-bold me-3">⚙️ Colunas opcionais:</span>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="colLocalImpAdic" onchange="renderizarTabelas()">
+                            <label class="form-check-label text-white small" for="colLocalImpAdic">Local de Impressão</label>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive border border-secondary rounded">
+                        <table class="table table-borderless align-middle mb-0" style="min-width: 1200px;">
+                            <thead><tr id="theadAdicionais"></tr></thead>
+                            <tbody id="tbodyAdicionais">
+                                <tr><td colspan="11" class="text-center text-white py-5">➕ Nenhum adicional ainda.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <button class="btn-add-row mt-2" onclick="adicionarAdicional()">+ Novo adicional</button>
+
+                    <div class="mt-4 pt-3 border-top border-secondary">
+                        <button class="btn btn-success btn-sm fw-bold" onclick="baixarCSV('adicionais')">⬇️ Baixar Adicionais CSV</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="imagens">
+                <div class="card p-4 rounded-3 shadow-sm mb-4">
+                    <h6 class="text-white mb-3 fw-bold">🖼️ BANCO DE IMAGENS COMPARTILHADO</h6>
+                    <p class="text-white small mb-4">Estas imagens ficam salvas na nuvem da equipe. Ao processar um novo cardápio, se o nome do produto/adicional for igual ao nome salvo aqui, a imagem será preenchida automaticamente.</p>
+                    
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4 p-3 rounded" style="background-color: var(--surface2); border: 1px solid var(--border);">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button id="btnUploadImages" class="btn btn-primary fw-bold btn-sm d-none" onclick="document.getElementById('multiImgInput').click()">📁 Fazer Upload Físico</button>
+                            <button id="btnImportExternal" class="btn btn-secondary fw-bold btn-sm text-white admin-only d-none" onclick="importarImagensExternas()">📥 Salvar Links na Nuvem</button>
+                            
+                            <button id="btnSearchGoogleTab" class="btn btn-success fw-bold btn-sm text-white d-none" data-bs-toggle="modal" data-bs-target="#modalBuscarGoogle">🔍 Buscar no Google</button>
+                            <button id="btnLinkExistingTab" class="btn btn-outline-info fw-bold btn-sm text-white d-none" onclick="abrirModalLinkManual()">🔗 Vincular Existente</button>
+                            <button id="btnGenImageTab" class="btn btn-warning fw-bold btn-sm text-dark d-none" onclick="abrirModalMudarImagemBanco()">✨ Desenhar Manualmente IA</button>
+                            
+                            <button id="btnBulkDelete" class="btn btn-danger fw-bold btn-sm d-none" onclick="excluirImagensEmMassa()">🗑️ Excluir Selecionados</button>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="text-white small fw-bold mb-0 text-nowrap">🔍 Ordenar por:</label>
+                            <select id="filterImages" class="form-select form-select-sm text-white" style="background-color: var(--surface); border: 1px solid var(--border); width: 180px;" onchange="renderizarGaleria()">
+                                <option value="recentes" selected>Mais Recentes</option>
+                                <option value="antigas">Mais Antigas</option>
+                                <option value="az">Alfabética (A-Z)</option>
+                                <option value="za">Alfabética (Z-A)</option>
+                                <option value="duplicatas">Apenas Duplicatas</option>
+                            </select>
+                        </div>
+                        <input type="file" id="multiImgInput" accept="image/*" multiple class="d-none">
+                    </div>
+
+                    <div id="stagingArea" class="row g-3 mb-4 d-none"></div>
+
+                    <div class="d-flex align-items-center mb-4">
+                        <button id="btnUploadAll" class="btn btn-success fw-bold d-none w-100">⬆️ Enviar Imagens para o ImgBB e Nuvem</button>
+                    </div>
+                    <div id="uploadingImgStatus" class="d-none text-warning small mb-4 text-center">Sincronizando arquivos... aguarde.</div>
+                    
+                    <h6 class="text-white mb-3 fw-bold border-top border-secondary pt-4">📂 Imagens Salvas na Nuvem</h6>
+                    <div class="table-responsive border border-secondary rounded">
+                        <table class="table table-borderless align-middle mb-0">
+                            <thead id="theadGaleria">
+                            </thead>
+                            <tbody id="tbodyGaleria">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="resumoPanel" class="card p-3 mt-4 rounded-3 shadow-sm d-none">
+                <h6 class="text-white mb-3 fw-bold">📊 Resumo do Cardápio</h6>
+                <div class="row g-3">
+                    <div class="col-md-3"><div class="summary-card"><div class="summary-number" id="countProdutos">0</div><div class="summary-label text-white">Produtos</div></div></div>
+                    <div class="col-md-3"><div class="summary-card"><div class="summary-number" id="countCategorias">0</div><div class="summary-label text-white">Categorias</div></div></div>
+                    <div class="col-md-3"><div class="summary-card"><div class="summary-number" id="countAdicionaisItens">0</div><div class="summary-label text-white">Itens de Adicionais</div></div></div>
+                    <div class="col-md-3"><div class="summary-card"><div class="summary-number" id="countAdicionaisGrupos">0</div><div class="summary-label text-white">Grupos de Adicionais</div></div></div>
+                </div>
+            </div>
+        </div>
+    </div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const IMGBB_API_KEY = '0db31b0b013563310ba73011bab6e3d7'; 
+        const JSONBIN_API_KEY = '$2a$10$XEPk7SjnwWXu4Ci0KGDBGeJrhjXeWiLJbcT0zRvdrlhCduKqJ8Fdu'; 
+        const JSONBIN_BIN_ID = '6a399ba4f5f4af5e291f5684';
+
+        let dadosCardapio = { produtos: [], adicionais: [] };
+        let arquivosBase = [];
+        let bancoImagens = {};
+        
+        let targetChangeTable = null;
+        let targetChangeIndex = null;
+        let isGeneratingImages = false;
+        let cancelImageGeneration = false;
+
+        // ==========================================
+        // FUNÇÕES GERAIS DE NOME E BANCO
+        // ==========================================
+        function normalizarNome(str) {
+            if (!str) return "";
+            return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s]/gi, '').trim().toLowerCase();
+        }
+
+        function salvarNoBancoComSufixo(nomeBase, url) {
+            let chaveBase = normalizarNome(nomeBase);
+            if (!chaveBase) chaveBase = "sem_nome";
+            let chaveFinal = chaveBase;
+            let nomeFinal = nomeBase || "Sem Nome";
+            let contador = 1;
+
+            while (bancoImagens[chaveFinal] && bancoImagens[chaveFinal].url !== url) {
+                chaveFinal = `${chaveBase} ${contador}`; 
+                nomeFinal = `${nomeBase} (${contador})`;   
+                contador++;
+            }
+            bancoImagens[chaveFinal] = { nome: nomeFinal, url: url, data: Date.now() };
+        }
+        
+        function buscarUrlsNoBanco(nomeOriginal) {
+            const chaveOriginal = normalizarNome(nomeOriginal);
+            if (!chaveOriginal) return [];
+            
+            let urls = [];
+            const regexExata = new RegExp('^' + chaveOriginal + '( \\d+)?$');
+            for (let k in bancoImagens) {
+                if (k === 'inicial') continue;
+                if (regexExata.test(k)) urls.push(bancoImagens[k].url);
+            }
+            if (urls.length > 0) return urls;
+
+            const palavrasOrig = chaveOriginal.split(' ').filter(p => p.length > 2); 
+            for (let k in bancoImagens) {
+                if (k === 'inicial') continue;
+                const nomeBanco = normalizarNome(bancoImagens[k].nome);
+                if (chaveOriginal.includes(nomeBanco) || nomeBanco.includes(chaveOriginal)) {
+                    urls.push(bancoImagens[k].url);
+                    continue;
+                }
+                const palavrasBanco = nomeBanco.split(' ').filter(p => p.length > 2);
+                let matches = 0;
+                for (let p of palavrasOrig) {
+                    if (palavrasBanco.includes(p)) matches++;
+                }
+                if (palavrasOrig.length > 0 && (matches / palavrasOrig.length) >= 0.6) {
+                    urls.push(bancoImagens[k].url);
+                }
+            }
+            return [...new Set(urls)];
+        }
+
+        document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', event => {
+                const isImagens = event.target.getAttribute('data-bs-target') === '#imagens';
+                const resumoPanel = document.getElementById('resumoPanel');
+                if (isImagens) {
+                    resumoPanel.classList.add('d-none');
+                } else {
+                    renderizarResumo(); 
+                }
+            });
+        });
+
+        // ==========================================
+        // SISTEMA DE MODAIS CUSTOMIZADOS
+        // ==========================================
+        function customAlert(title, message) {
+            return new Promise((resolve) => {
+                document.getElementById('cdTitle').innerText = title;
+                document.getElementById('cdMessage').innerText = message;
+                document.getElementById('cdInputs').classList.add('d-none');
+                document.getElementById('cdBtnCancel').classList.add('d-none');
+                
+                const box = document.getElementById('customDialogContainer');
+                box.classList.remove('d-none');
+                
+                const btnConfirm = document.getElementById('cdBtnConfirm');
+                btnConfirm.onclick = () => { box.classList.add('d-none'); resolve(); };
+            });
+        }
+
+        function customConfirm(title, message) {
+            return new Promise((resolve) => {
+                document.getElementById('cdTitle').innerText = title;
+                document.getElementById('cdMessage').innerText = message;
+                document.getElementById('cdInputs').classList.add('d-none');
+                document.getElementById('cdBtnCancel').classList.remove('d-none');
+                
+                const box = document.getElementById('customDialogContainer');
+                box.classList.remove('d-none');
+                
+                document.getElementById('cdBtnConfirm').onclick = () => { box.classList.add('d-none'); resolve(true); };
+                document.getElementById('cdBtnCancel').onclick = () => { box.classList.add('d-none'); resolve(false); };
+            });
+        }
+
+        function customPrompt(title, message, label1, val1='', label2=null, val2='') {
+            return new Promise((resolve) => {
+                document.getElementById('cdTitle').innerText = title;
+                document.getElementById('cdMessage').innerText = message;
+                
+                const inputsDiv = document.getElementById('cdInputs');
+                inputsDiv.classList.remove('d-none');
+                
+                const l1 = document.getElementById('cdLabel1');
+                const i1 = document.getElementById('cdInput1');
+                l1.innerText = label1; i1.value = val1;
+                l1.classList.remove('d-none'); i1.classList.remove('d-none');
+                
+                const l2 = document.getElementById('cdLabel2');
+                const i2 = document.getElementById('cdInput2');
+                if(label2) {
+                    l2.innerText = label2; i2.value = val2;
+                    l2.classList.remove('d-none'); i2.classList.remove('d-none');
+                } else {
+                    l2.classList.add('d-none'); i2.classList.add('d-none');
+                }
+
+                document.getElementById('cdBtnCancel').classList.remove('d-none');
+                const box = document.getElementById('customDialogContainer');
+                box.classList.remove('d-none');
+                
+                document.getElementById('cdBtnConfirm').onclick = () => { 
+                    box.classList.add('d-none'); 
+                    if(label2) resolve({ val1: i1.value, val2: i2.value });
+                    else resolve(i1.value);
+                };
+                document.getElementById('cdBtnCancel').onclick = () => { box.classList.add('d-none'); resolve(null); };
+            });
+        }
+
+        // ==========================================
+        // 100% NUVEM: SISTEMA DE LOGIN E PERMISSÕES
+        // ==========================================
+        let currentUser = null; 
+        let originalUser = null; 
+        let usuariosNuvem = {};
+        let configNuvem = { allowed_domains: [], gemini_keys: [], use_api_rotation: false };
+        let logsAuditoria = [];
+
+        function isMasterAccount(email) {
+            if(email === 'admin@menu.com') return true;
+            if(usuariosNuvem[email] && usuariosNuvem[email].is_master) return true;
+            return false;
+        }
+
+        function isUltimateAdmin(email) {
+            return email === 'admin@menu.com';
+        }
+
+        function getCurrentRealEmail() {
+            return originalUser ? originalUser.email : (currentUser ? currentUser.email : 'Desconhecido');
+        }
+
+        async function logAudit(actionDetails, tipoLog = 'sistema') {
+            const now = Date.now();
+            const dateStr = new Date(now).toLocaleString('pt-BR');
+            const logEntry = { text: `[${dateStr}] ${actionDetails}`, timestamp: now, type: tipoLog, id: now.toString() + Math.random().toString(36).substr(2, 5) };
+            
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, { headers: { 'X-Master-Key': JSONBIN_API_KEY } });
+                const data = await res.json();
+                let serverLogs = data.record.__AUDIT__ || [];
+                
+                serverLogs.unshift(logEntry);
+                
+                const eightDaysMs = 8 * 24 * 60 * 60 * 1000;
+                serverLogs = serverLogs.filter(log => {
+                    if(!log.timestamp) return true; 
+                    return (now - log.timestamp) <= eightDaysMs;
+                });
+                
+                logsAuditoria = serverLogs;
+                renderizarAuditoria();
+                
+                const payload = { ...bancoImagens, __USERS__: usuariosNuvem, __SETTINGS__: configNuvem, __AUDIT__: serverLogs };
+                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {}
+        }
+
+        function renderizarAuditoria() {
+            const container = document.getElementById('auditListContainer');
+            const filter = document.getElementById('auditFilter').value;
+            const amIMaster = isMasterAccount(getCurrentRealEmail());
+
+            let list = logsAuditoria;
+            if(filter !== 'todos') {
+                list = list.filter(l => l.type === filter);
+            }
+
+            if(list.length === 0) {
+                container.innerHTML = '<div class="text-white-50 text-center mt-4">Nenhum registro encontrado.</div>';
+                if(amIMaster) document.getElementById('btnLimparAuditoria').classList.add('d-none');
+                return;
+            }
+
+            if(amIMaster) document.getElementById('btnLimparAuditoria').classList.remove('d-none');
+
+            container.innerHTML = list.map(log => {
+                let textoLog = typeof log === 'string' ? log : log.text;
+                let idLog = typeof log === 'string' ? null : log.id;
+                
+                let btnDel = (amIMaster && idLog) ? `<button class="btn btn-sm text-danger px-1 py-0 ms-2" onclick="excluirLog('${idLog}')" title="Excluir Registro">🗑️</button>` : '';
+
+                return `
+                <div class="mb-2 pb-2 border-bottom border-secondary text-white d-flex justify-content-between align-items-start">
+                    <div>${textoLog}</div>
+                    ${btnDel}
+                </div>`;
+            }).join('');
+        }
+
+        async function excluirLog(idLog) {
+            if(await customConfirm("Excluir", "Deseja remover este registro de auditoria?")) {
+                logsAuditoria = logsAuditoria.filter(l => l.id !== idLog);
+                renderizarAuditoria();
+                try {
+                    const payload = { ...bancoImagens, __USERS__: usuariosNuvem, __SETTINGS__: configNuvem, __AUDIT__: logsAuditoria };
+                    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY }, body: JSON.stringify(payload) });
+                } catch(e) {}
+            }
+        }
+
+        async function limparTodaAuditoria() {
+            if(await customConfirm("Limpar Tudo", "Tem certeza absoluta que deseja APAGAR TODO o histórico de auditoria?")) {
+                logsAuditoria = [];
+                renderizarAuditoria();
+                try {
+                    const payload = { ...bancoImagens, __USERS__: usuariosNuvem, __SETTINGS__: configNuvem, __AUDIT__: logsAuditoria };
+                    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY }, body: JSON.stringify(payload) });
+                } catch(e) {}
+            }
+        }
+
+        function initAuth() {
+            const savedUser = localStorage.getItem('menu_ia_user');
+            if(savedUser) {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('loginScreen').classList.add('d-none');
+                carregarBancoNuvem(true); 
+            }
+        }
+
+        async function fazerLogin() {
+            const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+            const pass = document.getElementById('loginPassword').value.trim();
+            const btn = document.getElementById('btnLogin');
+            const loading = document.getElementById('loginLoading');
+            const error = document.getElementById('loginError');
+
+            if(!email) return;
+
+            btn.classList.add('d-none');
+            loading.classList.remove('d-none');
+            error.classList.add('d-none');
+
+            try {
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                });
+                const data = await res.json();
+                let record = data.record || {};
+                
+                usuariosNuvem = record.__USERS__ || {
+                    "admin@menu.com": { senha: "admin", role: "admin", blocked: false, created_at: Date.now(), first_login: false, perms: {} },
+                    "operador@menu.com": { senha: "123", role: "user", blocked: false, created_at: Date.now(), first_login: false, perms: {} }
+                };
+                configNuvem = record.__SETTINGS__ || { allowed_domains: [], gemini_keys: [], use_api_rotation: false };
+                
+                let rawLogs = record.__AUDIT__ || [];
+                const now = Date.now();
+                const eightDaysMs = 8 * 24 * 60 * 60 * 1000;
+                logsAuditoria = rawLogs.map(log => {
+                    if (typeof log === 'string') return { text: log, timestamp: now, type: 'sistema', id: Math.random().toString(36).substr(2,9) };
+                    return log;
+                }).filter(log => (now - (log.timestamp || now)) <= eightDaysMs);
+
+                let userObj = usuariosNuvem[email];
+                let authSuccess = false;
+
+                if (userObj) {
+                    if (userObj.blocked) {
+                        error.innerText = "Este usuário foi bloqueado pelo administrador.";
+                        error.classList.remove('d-none');
+                        return;
+                    }
+                    if (userObj.senha && userObj.senha === pass) {
+                        authSuccess = true;
+                    } else if (!userObj.senha) {
+                        const domain = "@" + email.split("@")[1];
+                        if (configNuvem.allowed_domains && configNuvem.allowed_domains.includes(domain)) authSuccess = true;
+                    }
+                } else {
+                    if(email.includes("@")) {
+                        const domain = "@" + email.split("@")[1];
+                        if (configNuvem.allowed_domains && configNuvem.allowed_domains.includes(domain)) {
+                            let defaultUserPerms = { can_delete_items: false, can_delete_img: false, can_edit_img: false, can_use_ai_text: true, can_gen_auto: false, can_link_auto: true, can_gen_manual: false, can_upload_link_search: false, can_view_images_tab: true, can_view_audit: false };
+                            usuariosNuvem[email] = {
+                                role: 'user', senha: '', blocked: false, created_at: Date.now(), first_login: true,
+                                perms: defaultUserPerms
+                            };
+                            userObj = usuariosNuvem[email];
+                            authSuccess = true;
+                        }
+                    }
+                }
+
+                if(authSuccess) {
+                    
+                    if (userObj.first_login !== false && email !== 'admin@menu.com' && email !== 'operador@menu.com') {
+                        const nova = await customPrompt("Bem-vindo(a)!", "Este é o seu primeiro acesso. Por favor, defina sua senha definitiva:", "Nova Senha");
+                        if (!nova || nova.trim() === '') {
+                            btn.classList.remove('d-none');
+                            loading.classList.add('d-none');
+                            return await customAlert("Aviso", "A criação de senha é obrigatória para o primeiro acesso.");
+                        }
+                        userObj.senha = nova.trim();
+                        userObj.first_login = false;
+                        usuariosNuvem[email] = userObj;
+                        
+                        logAudit(`Usuário novo ${email} acessou pela primeira vez e configurou senha.`, 'usuarios');
+                    } else {
+                        logAudit(`Login efetuado: ${email}`, 'sistema');
+                    }
+
+                    currentUser = { email: email, role: userObj.role, perms: userObj.perms || {} };
+                    localStorage.setItem('menu_ia_user', JSON.stringify(currentUser));
+                    document.getElementById('loginScreen').classList.add('d-none');
+                    
+                    if(record.__USERS__) delete record.__USERS__;
+                    if(record.__SETTINGS__) delete record.__SETTINGS__;
+                    if(record.__AUDIT__) delete record.__AUDIT__;
+                    bancoImagens = record;
+                    
+                    try {
+                        const payload = { ...bancoImagens, __USERS__: usuariosNuvem, __SETTINGS__: configNuvem, __AUDIT__: logsAuditoria };
+                        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY }, body: JSON.stringify(payload) });
+                    } catch(e) {}
+
+                    applyPermissions();
+                    renderizarGaleria();
+                    renderizarListaUsuarios();
+                    renderizarDominios();
+                    renderizarApiKeys();
+                    renderizarAuditoria();
+                } else {
+                    error.innerText = "E-mail não cadastrado ou senha incorreta!";
+                    error.classList.remove('d-none');
+                }
+            } catch(e) {
+                error.innerText = "Erro de conexão com o banco em nuvem.";
+                error.classList.remove('d-none');
+            } finally {
+                btn.classList.remove('d-none');
+                loading.classList.add('d-none');
+            }
+        }
+
+        function fazerLogout() {
+            localStorage.removeItem('menu_ia_user');
+            location.reload();
+        }
+
+        async function alterarMinhaSenha() {
+            const offcanvasEl = document.getElementById('offcanvasUsers');
+            if(offcanvasEl) {
+                const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+                if(bsOffcanvas) bsOffcanvas.hide();
+            }
+
+            setTimeout(async () => {
+                const novaSenha = await customPrompt("Alterar Senha", "Digite sua nova senha de acesso:", "Nova Senha");
+                if(novaSenha && novaSenha.trim() !== '') {
+                    usuariosNuvem[currentUser.email].senha = novaSenha.trim();
+                    await salvarBancoNuvem();
+                    logAudit(`${getCurrentRealEmail()} alterou sua própria senha.`, 'sistema');
+                    showToast();
+                }
+            }, 300);
+        }
+
+        function applyPermissions() {
+            if(!currentUser) return;
+            document.getElementById('userDisplayInfo').innerText = currentUser.email;
+            
+            const bMaster = document.getElementById('userBadgeMaster');
+            const bAdmin = document.getElementById('userBadgeAdmin');
+            
+            if(isMasterAccount(currentUser.email)) {
+                bMaster.classList.remove('d-none');
+                bAdmin.classList.add('d-none');
+            } else if (currentUser.role === 'admin') {
+                bMaster.classList.add('d-none');
+                bAdmin.classList.remove('d-none');
+            } else {
+                bMaster.classList.add('d-none');
+                bAdmin.classList.add('d-none');
+            }
+
+            let p = currentUser.perms || {};
+            if(isMasterAccount(currentUser.email)) {
+                p = { can_delete_items: true, can_delete_img: true, can_edit_img: true, can_use_ai_text: true, can_gen_auto: true, can_link_auto: true, can_gen_manual: true, can_upload_link_search: true, can_view_images_tab: true, can_view_audit: true };
+            }
+
+            if(p.can_view_audit) document.getElementById('btnAuditPanel').classList.remove('d-none');
+            else document.getElementById('btnAuditPanel').classList.add('d-none');
+
+            if(currentUser.role === 'admin') {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
+                if(isMasterAccount(currentUser.email)) {
+                    document.querySelectorAll('.admin-master-only').forEach(el => el.classList.remove('d-none'));
+                } else {
+                    document.querySelectorAll('.admin-master-only').forEach(el => el.classList.add('d-none'));
+                }
+            } else {
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
+                document.querySelectorAll('.admin-master-only').forEach(el => el.classList.add('d-none'));
+            }
+
+            const navImagens = document.getElementById('navItemImagens');
+            if(!p.can_view_images_tab) {
+                navImagens.classList.add('d-none');
+                p.can_upload_link_search = false;
+                p.can_gen_manual = false;
+            } else {
+                navImagens.classList.remove('d-none');
+            }
+
+            const wrapAI = document.getElementById('wrapUseAIToggle');
+            if(!p.can_use_ai_text) { if(wrapAI) wrapAI.classList.add('d-none'); } 
+            else { if(wrapAI) wrapAI.classList.remove('d-none'); }
+
+            const wrapGenAuto = document.getElementById('wrapAutoGenToggle');
+            if(!p.can_gen_auto) { if(wrapGenAuto) wrapGenAuto.classList.add('d-none'); } 
+            else { if(wrapGenAuto) wrapGenAuto.classList.remove('d-none'); }
+
+            const wrapLinkAuto = document.getElementById('wrapAutoLinkToggle');
+            if(!p.can_link_auto) { if(wrapLinkAuto) wrapLinkAuto.classList.add('d-none'); } 
+            else { if(wrapLinkAuto) wrapLinkAuto.classList.remove('d-none'); }
+
+            const btnGenTab = document.getElementById('btnGenImageTab');
+            if(btnGenTab) {
+                if(!p.can_gen_manual) btnGenTab.classList.add('d-none');
+                else btnGenTab.classList.remove('d-none');
+            }
+
+            const btnUp = document.getElementById('btnUploadImages');
+            const btnLink = document.getElementById('btnLinkExistingTab');
+            const btnSearch = document.getElementById('btnSearchGoogleTab');
+            const btnImport = document.getElementById('btnImportExternal');
+            
+            if(!p.can_upload_link_search) {
+                if(btnUp) btnUp.classList.add('d-none');
+                if(btnLink) btnLink.classList.add('d-none');
+                if(btnSearch) btnSearch.classList.add('d-none');
+                if(btnImport) btnImport.classList.add('d-none');
+            } else {
+                if(btnUp) btnUp.classList.remove('d-none');
+                if(btnLink) btnLink.classList.remove('d-none');
+                if(btnSearch) btnSearch.classList.remove('d-none');
+                if(btnImport) btnImport.classList.remove('d-none');
+            }
+
+            renderizarTabelas(p);
+            renderizarGaleria(p);
+        }
+
+        async function carregarBancoNuvem(isInitialLoad = false) {
+            try {
+                if(!isInitialLoad) document.getElementById('tbodyGaleria').innerHTML = '<tr><td colspan="5" class="text-center text-warning py-4"><div class="spinner-border spinner-border-sm me-2"></div>Sincronizando...</td></tr>';
+                const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: { 'X-Master-Key': JSONBIN_API_KEY }
+                });
+                const data = await res.json();
+                let record = data.record || {};
+                
+                let defaultPermsAdmin = { can_delete_items: true, can_delete_img: true, can_edit_img: true, can_use_ai_text: true, can_gen_auto: true, can_link_auto: true, can_gen_manual: true, can_upload_link_search: true, can_view_images_tab: true, can_view_audit: true };
+                let defaultPermsUser = { can_delete_items: false, can_delete_img: false, can_edit_img: false, can_use_ai_text: true, can_gen_auto: false, can_link_auto: true, can_gen_manual: false, can_upload_link_search: false, can_view_images_tab: true, can_view_audit: false };
+
+                usuariosNuvem = record.__USERS__ || {
+                    "admin@menu.com": { senha: "admin", role: "admin", created_at: Date.now(), perms: defaultPermsAdmin },
+                    "operador@menu.com": { senha: "123", role: "user", created_at: Date.now(), perms: defaultPermsUser }
+                };
+                configNuvem = record.__SETTINGS__ || { allowed_domains: [], gemini_keys: [], use_api_rotation: false };
+                
+                let rawLogs = record.__AUDIT__ || [];
+                const now = Date.now();
+                const eightDaysMs = 8 * 24 * 60 * 60 * 1000;
+                logsAuditoria = rawLogs.map(log => {
+                    if (typeof log === 'string') return { text: log, timestamp: now, type: 'sistema', id: Math.random().toString(36).substr(2,9) };
+                    return log;
+                }).filter(log => (now - (log.timestamp || now)) <= eightDaysMs);
+                
+                if (currentUser && usuariosNuvem[currentUser.email]) {
+                    if(usuariosNuvem[currentUser.email].blocked) {
+                        fazerLogout();
+                        return;
+                    }
+                    currentUser.role = usuariosNuvem[currentUser.email].role;
+                    currentUser.perms = usuariosNuvem[currentUser.email].perms || {};
+                    localStorage.setItem('menu_ia_user', JSON.stringify(currentUser));
+                }
+
+                if(record.__USERS__) delete record.__USERS__;
+                if(record.__SETTINGS__) delete record.__SETTINGS__;
+                if(record.__AUDIT__) delete record.__AUDIT__;
+                bancoImagens = record;
+                
+            } catch(e) {
+                console.error("Erro na nuvem:", e);
+                if(!isInitialLoad) document.getElementById('tbodyGaleria').innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Erro ao conectar na nuvem.</td></tr>';
+            } finally {
+                applyPermissions(); 
+                renderizarListaUsuarios();
+                renderizarDominios();
+                renderizarApiKeys();
+                renderizarAuditoria();
+            }
+        }
+
+        async function salvarBancoNuvem() {
+            try {
+                const payload = { ...bancoImagens, __USERS__: usuariosNuvem, __SETTINGS__: configNuvem, __AUDIT__: logsAuditoria };
+                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_API_KEY },
+                    body: JSON.stringify(payload)
+                });
+            } catch(e) {
+                console.error("Erro ao salvar:", e);
+            }
+        }
+
+        // ==========================================
+        // ADMIN PANEL: USUÁRIOS E DOMÍNIOS E KEYS
+        // ==========================================
+        function renderizarDominios() {
+            if(!currentUser || currentUser.role !== 'admin') return;
+            const container = document.getElementById('domainListContainer');
+            if(!configNuvem.allowed_domains || configNuvem.allowed_domains.length === 0) {
+                container.innerHTML = '<span class="text-white-50 small">Nenhum domínio permitido.</span>';
+                return;
+            }
+            container.innerHTML = configNuvem.allowed_domains.map((dom, i) => `
+                <div class="domain-tag">${dom} <span style="cursor:pointer; margin-left:4px; color:#ef4444;" onclick="removerDominio(${i})">x</span></div>
+            `).join('');
+        }
+
+        async function adicionarDominio() {
+            let dom = document.getElementById('newDomainInput').value.trim().toLowerCase();
+            if(!dom) return;
+            if(!dom.startsWith('@')) dom = '@' + dom;
+            if(!configNuvem.allowed_domains) configNuvem.allowed_domains = [];
+            if(!configNuvem.allowed_domains.includes(dom)) {
+                configNuvem.allowed_domains.push(dom);
+                document.getElementById('newDomainInput').value = '';
+                renderizarDominios();
+                await salvarBancoNuvem();
+                showToast();
+                logAudit(`Master adicionou o domínio permitido: ${dom}`, 'sistema');
+            }
+        }
+
+        async function removerDominio(idx) {
+            if(await customConfirm('Confirmação', 'Remover este domínio da lista permitida?')) {
+                const dom = configNuvem.allowed_domains[idx];
+                configNuvem.allowed_domains.splice(idx, 1);
+                renderizarDominios();
+                await salvarBancoNuvem();
+                logAudit(`Master removeu o domínio permitido: ${dom}`, 'sistema');
+            }
+        }
+
+        function renderizarApiKeys() {
+            if(!currentUser || !isMasterAccount(currentUser.email)) return;
+            const container = document.getElementById('apiKeysListContainer');
+            document.getElementById('toggleApiRotation').checked = !!configNuvem.use_api_rotation;
+
+            if(!configNuvem.gemini_keys || configNuvem.gemini_keys.length === 0) {
+                container.innerHTML = '<span class="text-white-50 small">Nenhuma chave extra cadastrada.</span>';
+                return;
+            }
+            container.innerHTML = configNuvem.gemini_keys.map((key, i) => {
+                const mask = key.substring(0, 10) + '...';
+                return `<div class="key-tag">${mask} <span style="cursor:pointer; margin-left:4px; color:#ef4444;" onclick="removerApiKey(${i})">x</span></div>`;
+            }).join('');
+        }
+
+        async function adicionarApiKey() {
+            let key = document.getElementById('newApiKeyInput').value.trim();
+            if(!key) return;
+            if(!configNuvem.gemini_keys) configNuvem.gemini_keys = [];
+            if(!configNuvem.gemini_keys.includes(key)) {
+                configNuvem.gemini_keys.push(key);
+                document.getElementById('newApiKeyInput').value = '';
+                renderizarApiKeys();
+                await salvarBancoNuvem();
+                showToast();
+                logAudit(`Master adicionou uma nova Chave Gemini extra.`, 'sistema');
+            }
+        }
+
+        async function removerApiKey(idx) {
+            if(await customConfirm('Confirmação', 'Remover esta chave da lista de rodízio?')) {
+                configNuvem.gemini_keys.splice(idx, 1);
+                renderizarApiKeys();
+                await salvarBancoNuvem();
+                logAudit(`Master removeu uma Chave Gemini extra.`, 'sistema');
+            }
+        }
+
+        async function alterarConfigRotacao(checked) {
+            configNuvem.use_api_rotation = checked;
+            await salvarBancoNuvem();
+            logAudit(`Master ${checked ? 'ativou' : 'desativou'} o rodízio de chaves API.`, 'sistema');
+        }
+
+        function togglePerms(safeId, btnElement) {
+            const panel = document.getElementById('perms_' + safeId);
+            panel.classList.toggle('d-none');
+            btnElement.classList.toggle('active-gear');
+        }
+
+        function renderizarListaUsuarios() {
+            if(!currentUser || currentUser.role !== 'admin') return;
+            const container = document.getElementById('usersListContainer');
+            if(!container) return; // Segurança
+
+            const blockedContainer = document.getElementById('blockedUsersContainer');
+            const filter = document.getElementById('userFilterSelect').value || 'recentes';
+            
+            let list = Object.keys(usuariosNuvem)
+                .filter(k => k !== 'admin@menu.com' && k !== 'operador@menu.com')
+                .map(k => ({ email: k, ...usuariosNuvem[k] }));
+
+            if(filter === 'admins') list = list.filter(u => u.role === 'admin');
+            if(filter === 'users') list = list.filter(u => u.role === 'user');
+            if(filter === 'az') list.sort((a,b) => a.email.localeCompare(b.email));
+            if(filter === 'za') list.sort((a,b) => b.email.localeCompare(a.email));
+            if(filter === 'recentes') list.sort((a,b) => (b.created_at || 0) - (a.created_at || 0));
+            if(filter === 'antigos') list.sort((a,b) => (a.created_at || 0) - (b.created_at || 0));
+
+            let htmlActive = '';
+            let htmlBlocked = '';
+            let blockedCount = 0;
+            const amIMaster = isMasterAccount(getCurrentRealEmail());
+            const amIUltimateAdmin = isUltimateAdmin(getCurrentRealEmail());
+
+            for(let u of list) {
+                const safeId = u.email.replace(/[@.]/g, '_');
+                const p = u.perms || {};
+
+                let roleBadge = '';
+                if(u.is_master) roleBadge = '<span class="badge bg-warning text-dark">Master</span>';
+                else if (u.role === 'admin') roleBadge = '<span class="badge bg-danger">Admin</span>';
+                else roleBadge = '<span class="badge bg-primary">Operador</span>';
+                
+                const blockColor = u.blocked ? 'btn-outline-success' : 'btn-outline-warning';
+                const rowOpacity = u.blocked ? 'opacity:0.5;' : '';
+
+                let canEditThisUser = false;
+                if (amIUltimateAdmin) { canEditThisUser = true; } 
+                else if (amIMaster && !u.is_master && u.role === 'admin') { canEditThisUser = true; } 
+                else if (amIMaster && u.role === 'user') { canEditThisUser = true; } 
+                else if (currentUser.role === 'admin' && u.role === 'user') { canEditThisUser = true; }
+
+                let controlsHtml = '';
+                if (canEditThisUser) {
+                    controlsHtml = `
+                        <div class="action-btn-row mt-2">
+                            <button class="btn btn-outline-light" onclick="togglePerms('${safeId}', this)" title="Configurações e Permissões">⚙️</button>
+                            <button class="btn btn-outline-info" onclick="redefinirSenhaUser('${u.email}')" title="Redefinir Senha">🔑</button>
+                            <button class="btn ${blockColor}" onclick="toggleBloqueio('${u.email}', ${u.blocked})" title="Bloquear / Desbloquear">🚫</button>
+                            <button class="btn btn-outline-light" onclick="visualizarComo('${u.email}')" title="Visualizar como este usuário">👁️</button>
+                            <button class="btn btn-outline-danger" onclick="removerUsuario('${u.email}')" title="Excluir Definitivo">🗑️</button>
+                        </div>
+                        
+                        <div id="perms_${safeId}" class="d-none mt-3 border-top border-secondary pt-3">
+                            <div class="d-flex align-items-center justify-content-between mb-3 bg-dark p-2 rounded border border-secondary">
+                                <span class="text-white small fw-bold">Nível de Acesso:</span>
+                                <select class="form-select form-select-sm w-auto text-white bg-dark border-0 fw-bold" onchange="alterarRoleMaster('${u.email}', this.value)">
+                                    <option value="user" ${u.role==='user'?'selected':''}>Operador</option>
+                                    <option value="admin" ${u.role==='admin' && !u.is_master ?'selected':''}>Administrador</option>
+                                    ${amIUltimateAdmin ? `<option value="master" ${u.role==='admin' && u.is_master ?'selected':''}>Master</option>` : ''}
+                                </select>
+                            </div>
+                            
+                            <div class="row g-2">
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_delete_items', this.checked)" ${p.can_delete_items?'checked':''}> Excluir Itens (Cardápio/Adicionais)</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_link_auto', this.checked)" ${p.can_link_auto?'checked':''}> Vincular Imagens Auto. (Cardápio)</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_use_ai_text', this.checked)" ${p.can_use_ai_text?'checked':''}> Usar Revisão por IA (Cardápio)</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_gen_auto', this.checked)" ${p.can_gen_auto?'checked':''}> Gerar Imagens Auto. (Cardápio)</label></div>
+                                
+                                <div class="col-12 border-top border-secondary mt-2 pt-2"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_view_images_tab', this.checked)" ${p.can_view_images_tab?'checked':''}> Ver aba Imagens inteira</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_gen_manual', this.checked)" ${p.can_gen_manual?'checked':''}> Desenhar IA Manual (Imagens)</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_upload_link_search', this.checked)" ${p.can_upload_link_search?'checked':''}> Upload / Vincular / Buscar (Imagens)</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_edit_img', this.checked)" ${p.can_edit_img?'checked':''}> Editar Dados Imagens (Imagens)</label></div>
+                                <div class="col-12"><label class="text-white small"><input type="checkbox" onchange="alterarPermissao('${u.email}', 'can_delete_img', this.checked)" ${p.can_delete_img?'checked':''}> Excluir Imagens (Imagens)</label></div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    controlsHtml = `<div class="text-white-50 small mt-2">Permissões gerenciadas apenas por contas Master.</div>`;
+                }
+
+                const userCard = `
+                    <div class="mb-3 p-3 border border-secondary rounded" style="background-color: var(--surface); ${rowOpacity}">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            ${roleBadge}
+                            <span class="fw-bold text-white text-break">${u.email}</span>
+                        </div>
+                        ${controlsHtml}
+                    </div>
+                `;
+
+                if(u.blocked) {
+                    htmlBlocked += userCard;
+                    blockedCount++;
+                } else {
+                    htmlActive += userCard;
+                }
+            }
+
+            container.innerHTML = htmlActive;
+            
+            document.getElementById('blockedCountBadge').innerText = blockedCount;
+            if(blockedCount === 0) {
+                blockedContainer.innerHTML = '<div class="text-white-50 small text-center p-2">Nenhum usuário bloqueado.</div>';
+            } else {
+                blockedContainer.innerHTML = htmlBlocked;
+            }
+        }
+
+        async function alterarRoleMaster(email, value) {
+            if(!usuariosNuvem[email].perms) usuariosNuvem[email].perms = {};
+            
+            if (value === 'master') {
+                usuariosNuvem[email].role = 'admin';
+                usuariosNuvem[email].is_master = true;
+                usuariosNuvem[email].perms = { can_delete_items: true, can_delete_img: true, can_edit_img: true, can_use_ai_text: true, can_gen_auto: true, can_link_auto: true, can_gen_manual: true, can_upload_link_search: true, can_view_images_tab: true, can_view_audit: true };
+            } else if (value === 'admin') {
+                usuariosNuvem[email].role = 'admin';
+                usuariosNuvem[email].is_master = false;
+                usuariosNuvem[email].perms = { can_delete_items: true, can_delete_img: true, can_edit_img: true, can_use_ai_text: true, can_gen_auto: true, can_link_auto: true, can_gen_manual: true, can_upload_link_search: true, can_view_images_tab: true, can_view_audit: true };
+            } else {
+                usuariosNuvem[email].role = 'user';
+                usuariosNuvem[email].is_master = false;
+                usuariosNuvem[email].perms = { can_delete_items: false, can_delete_img: false, can_edit_img: false, can_use_ai_text: true, can_gen_auto: false, can_link_auto: true, can_gen_manual: false, can_upload_link_search: false, can_view_images_tab: true, can_view_audit: false };
+            }
+            renderizarListaUsuarios();
+            await salvarBancoNuvem();
+            logAudit(`${getCurrentRealEmail()} alterou permissões do usuário ${email} para ${value.toUpperCase()}`, 'usuarios');
+            showToast();
+        }
+
+        async function adicionarUsuario() {
+            const email = document.getElementById('newUseEmail').value.trim().toLowerCase();
+            const senha = document.getElementById('newUserPass').value.trim();
+            const role = document.getElementById('newUserRole').value;
+            
+            if(!email || !senha) return await customAlert("Erro", "Preencha email e senha para cadastrar!");
+            if(usuariosNuvem[email]) return await customAlert("Aviso", "Este usuário já existe no sistema!");
+
+            let defaultPerms = role === 'admin' 
+                ? { can_delete_items: true, can_delete_img: true, can_edit_img: true, can_use_ai_text: true, can_gen_auto: true, can_link_auto: true, can_gen_manual: true, can_upload_link_search: true, can_view_images_tab: true, can_view_audit: true }
+                : { can_delete_items: false, can_delete_img: false, can_edit_img: false, can_use_ai_text: true, can_gen_auto: false, can_link_auto: true, can_gen_manual: false, can_upload_link_search: false, can_view_images_tab: true, can_view_audit: false };
+
+            usuariosNuvem[email] = { 
+                senha: senha, role: role, blocked: false, created_at: Date.now(), perms: defaultPerms, is_master: false, first_login: true
+            };
+            
+            document.getElementById('newUseEmail').value = '';
+            document.getElementById('newUserPass').value = '';
+            document.getElementById('userCreatePanel').classList.add('d-none');
+            
+            renderizarListaUsuarios();
+            await salvarBancoNuvem();
+            logAudit(`${getCurrentRealEmail()} cadastrou o usuário ${email} (${role.toUpperCase()})`, 'usuarios');
+            showToast();
+        }
+
+        async function removerUsuario(email) {
+            if(email === currentUser.email) return await customAlert("Negado", "Você não pode excluir a si mesmo!");
+            if(await customConfirm("Confirmação de Exclusão", `Tem certeza que deseja EXCLUIR DEFINITIVAMENTE o acesso de ${email}?`)) {
+                delete usuariosNuvem[email];
+                renderizarListaUsuarios();
+                await salvarBancoNuvem();
+                logAudit(`${getCurrentRealEmail()} excluiu permanentemente o usuário: ${email}`, 'usuarios');
+                showToast();
+            }
+        }
+
+        async function toggleBloqueio(email, isBlocked) {
+            if(email === currentUser.email) return await customAlert("Negado", "Você não pode bloquear a si mesmo!");
+            const acaoStr = isBlocked ? "DESBLOQUEAR" : "BLOQUEAR";
+            if(await customConfirm("Alterar Acesso", `Deseja realmente ${acaoStr} o usuário ${email}?`)) {
+                usuariosNuvem[email].blocked = !usuariosNuvem[email].blocked;
+                renderizarListaUsuarios();
+                await salvarBancoNuvem();
+                logAudit(`${getCurrentRealEmail()} ${isBlocked ? 'desbloqueou' : 'bloqueou'} o usuário: ${email}`, 'usuarios');
+                showToast();
+            }
+        }
+
+        async function redefinirSenhaUser(email) {
+            const offcanvasEl = document.getElementById('offcanvasUsers');
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if(bsOffcanvas) bsOffcanvas.hide();
+
+            setTimeout(async () => {
+                const novaSenha = await customPrompt("Redefinir Senha", `Digite a nova senha para o usuário ${email}:`, "Nova Senha");
+                if(novaSenha && novaSenha.trim() !== '') {
+                    usuariosNuvem[email].senha = novaSenha.trim();
+                    renderizarListaUsuarios();
+                    await salvarBancoNuvem();
+                    logAudit(`${getCurrentRealEmail()} redefiniu a senha de: ${email}`, 'usuarios');
+                    showToast();
+                }
+            }, 300);
+        }
+
+        async function alterarPermissao(email, permissao, valor) {
+            if(!usuariosNuvem[email].perms) usuariosNuvem[email].perms = {};
+            usuariosNuvem[email].perms[permissao] = valor;
+            await salvarBancoNuvem();
+            showToast();
+        }
+
+        // ==========================================
+        // MODO "VISUALIZAR COMO"
+        // ==========================================
+        function visualizarComo(emailSelected) {
+            const offcanvasEl = document.getElementById('offcanvasUsers');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasEl);
+            if(offcanvas) offcanvas.hide();
+
+            originalUser = JSON.parse(JSON.stringify(currentUser)); 
+            
+            currentUser = { email: emailSelected, role: usuariosNuvem[emailSelected].role, perms: usuariosNuvem[emailSelected].perms || {} };
+            
+            document.getElementById('viewAsBanner').classList.remove('d-none');
+            document.getElementById('viewAsEmail').innerText = emailSelected;
+            document.getElementById('mainAppWrapper').style.marginTop = "40px"; 
+            
+            applyPermissions();
+        }
+
+        function sairVisualizacao() {
+            if(!originalUser) return;
+            currentUser = originalUser;
+            originalUser = null;
+            
+            document.getElementById('viewAsBanner').classList.add('d-none');
+            document.getElementById('mainAppWrapper').style.marginTop = "0px";
+            
+            applyPermissions();
+        }
+
+        // ==========================================
+        // FLUXO DO SISTEMA PRINCIPAL (IMAGENS E CARDÁPIO)
+        // ==========================================
+
+        function toggleSelectAllImages(master) {
+            document.querySelectorAll('.img-select-checkbox').forEach(cb => cb.checked = master.checked);
+            updateBulkDeleteButton();
+        }
+
+        function updateBulkDeleteButton() {
+            if(!currentUser) return;
+            let p = currentUser.perms || {};
+            if(isMasterAccount(currentUser.email)) p.can_delete_img = true;
+
+            if(!p.can_delete_img) return; 
+
+            const checkedCount = document.querySelectorAll('.img-select-checkbox:checked').length;
+            const btn = document.getElementById('btnBulkDelete');
+            if (btn) {
+                if (checkedCount > 0) btn.classList.remove('d-none');
+                else btn.classList.add('d-none');
+            }
+        }
+
+        async function excluirImagensEmMassa() {
+            let p = currentUser.perms || {};
+            if(isMasterAccount(currentUser.email)) p.can_delete_img = true;
+            if(!p.can_delete_img) return;
+
+            const checkboxes = document.querySelectorAll('.img-select-checkbox:checked');
+            if (await customConfirm("Atenção", `Deseja realmente excluir ${checkboxes.length} imagens do banco global?`)) {
+                checkboxes.forEach(cb => {
+                    const chave = cb.getAttribute('data-chave');
+                    delete bancoImagens[chave];
+                });
+                if(document.getElementById('selectAllImages')) document.getElementById('selectAllImages').checked = false;
+                renderizarGaleria(p);
+                await salvarBancoNuvem();
+                logAudit(`${getCurrentRealEmail()} excluiu ${checkboxes.length} imagens em lote.`, 'imagens');
+            }
+        }
+
+        async function editarImagemBanco(chave) {
+            let p = currentUser.perms || {};
+            if(isMasterAccount(currentUser.email)) p.can_edit_img = true;
+            if(!p.can_edit_img) return await customAlert("Bloqueado", "Você não tem permissão para editar imagens do banco.");
+
+            const img = bancoImagens[chave];
+            const data = await customPrompt("Editar Referência", "Altere o nome e o link se necessário:", "Nome de Referência", img.nome, "Link (URL)", img.url);
+            
+            if(data && data.val1.trim() !== "" && data.val2.trim() !== "") {
+                const novoNome = data.val1.trim();
+                const novaUrl = data.val2.trim();
+                
+                delete bancoImagens[chave]; 
+                salvarNoBancoComSufixo(novoNome, novaUrl);
+                renderizarGaleria(p);
+                await salvarBancoNuvem();
+                logAudit(`${getCurrentRealEmail()} editou a imagem no banco para: ${novoNome}`, 'imagens');
+                showToast();
+            }
+        }
+
+        function renderizarGaleria(p = null) {
+            if(!p) {
+                p = currentUser.perms || {};
+                if(isMasterAccount(currentUser.email)) { p.can_delete_img = true; p.can_edit_img = true; }
+            }
+
+            const tbody = document.getElementById('tbodyGaleria');
+            const thead = document.getElementById('theadGaleria');
+            if (!tbody || !thead || !currentUser) return;
+
+            let headHTML = ``;
+            if (p.can_delete_img) headHTML += `<th style="width: 40px;"><input type="checkbox" id="selectAllImages" onchange="toggleSelectAllImages(this)"></th>`;
+            headHTML += `<th style="width: 70px;">IMAGEM</th><th>NOME REFERÊNCIA</th><th>LINK (IMGBB)</th>`;
+            if (p.can_delete_img || p.can_edit_img) headHTML += `<th style="width: 90px;">AÇÕES</th>`;
+            thead.innerHTML = headHTML;
+
+            let arr = Object.keys(bancoImagens).filter(k => k !== "inicial").map(k => ({ chave: k, ...bancoImagens[k] }));
+            
+            if (arr.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${p.can_delete_img?5:4}" class="text-center text-white py-4">Nenhuma imagem salva no banco.</td></tr>`;
+                updateBulkDeleteButton();
+                return;
+            }
+
+            const filterSelect = document.getElementById('filterImages');
+            const filterVal = filterSelect ? filterSelect.value : 'recentes';
+
+            if (filterVal === 'az') arr.sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+            if (filterVal === 'za') arr.sort((a, b) => (b.nome || '').localeCompare(a.nome || ''));
+            if (filterVal === 'recentes') arr.sort((a, b) => (b.data || 0) - (a.data || 0));
+            if (filterVal === 'antigas') arr.sort((a, b) => (a.data || 0) - (b.data || 0));
+            
+            if (filterVal === 'duplicatas') {
+                const nameCounts = {};
+                arr.forEach(img => {
+                    const baseName = img.nome.replace(/\s\(\d+\)$/, '').trim();
+                    nameCounts[baseName] = (nameCounts[baseName] || 0) + 1;
+                });
+                arr = arr.filter(img => {
+                    const baseName = img.nome.replace(/\s\(\d+\)$/, '').trim();
+                    return nameCounts[baseName] > 1;
+                });
+                if(arr.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="${p.can_delete_img?5:4}" class="text-center text-white py-4">Nenhuma imagem duplicada encontrada.</td></tr>`;
+                    updateBulkDeleteButton();
+                    return;
+                }
+            }
+
+            tbody.innerHTML = arr.map(img => {
+                let checkRow = p.can_delete_img ? `<td><input type="checkbox" class="img-select-checkbox" data-chave="${img.chave}" onchange="updateBulkDeleteButton()"></td>` : ``;
+                
+                let btnEditar = p.can_edit_img ? `<button class="btn btn-sm btn-outline-info me-1" onclick="editarImagemBanco('${img.chave}')" title="Editar Nome ou Link">✏️</button>` : ``;
+                let btnExcluir = p.can_delete_img ? `<button class="btn btn-sm btn-outline-danger" onclick="removerImagemBanco('${img.chave}')" title="Excluir">🗑️</button>` : ``;
+                
+                let actionCol = (p.can_edit_img || p.can_delete_img) ? `<td class="text-nowrap">${btnEditar}${btnExcluir}</td>` : ``;
+
+                return `
+                    <tr>
+                        ${checkRow}
+                        <td>
+                            <div class="table-img-container">
+                                <a href="${img.url}" target="_blank" class="table-img-wrapper">
+                                    <img src="${img.url}" class="table-img-preview" title="Clique para ampliar">
+                                </a>
+                            </div>
+                        </td>
+                        <td class="text-white fw-bold">${img.nome || 'Sem Nome'}</td>
+                        <td><a href="${img.url}" target="_blank" class="text-info text-break" style="font-size: 0.8rem;">${img.url}</a></td>
+                        ${actionCol}
+                    </tr>
+                `;
+            }).join('');
+            updateBulkDeleteButton();
+        }
+
+        async function removerImagemBanco(chave) {
+            let p = currentUser.perms || {};
+            if(isMasterAccount(currentUser.email)) p.can_delete_img = true;
+            if(!p.can_delete_img) return;
+            
+            const imgNome = bancoImagens[chave].nome;
+            if (await customConfirm("Excluir Imagem", "Tem certeza que deseja apagar esta imagem do banco da equipe?")) {
+                delete bancoImagens[chave];
+                renderizarGaleria(p);
+                await salvarBancoNuvem();
+                logAudit(`${getCurrentRealEmail()} excluiu a imagem individual: ${imgNome}`, 'imagens');
+            }
+        }
+
+        // ==========================================
+        // IMPORTAÇÃO DE LINKS EXTERNOS (NOVO)
+        // ==========================================
+        let linksParaImportarPendentes = [];
+
+        async function importarImagensExternas() {
+            if(!currentUser) return;
+            const p = currentUser.role === 'admin' ? {can_upload_link_search: true} : (currentUser.perms || {});
+            if(!p.can_upload_link_search) return await customAlert("Bloqueado", "Você não tem permissão para importar imagens.");
+
+            linksParaImportarPendentes = [];
+            
+            dadosCardapio.produtos.forEach((p_item, i) => {
+                let url = (p_item.imagem || "").trim();
+                if(url && url.startsWith('http')) {
+                    linksParaImportarPendentes.push({ tipo: 'produtos', idx: i, url: url, nome: p_item.produto || `Produto_${i}` });
+                }
+            });
+            dadosCardapio.adicionais.forEach((a_item, i) => {
+                let url = (a_item.imagem || "").trim();
+                if(url && url.startsWith('http')) {
+                    linksParaImportarPendentes.push({ tipo: 'adicionais', idx: i, url: url, nome: a_item.item || `Adicional_${i}` });
+                }
+            });
+
+            if(linksParaImportarPendentes.length === 0) {
+                return await customAlert("Aviso", "Não há links externos pendentes nas tabelas. (Processe a planilha na aba Cardápio primeiro para extrair os links para a tabela).");
+            }
+
+            const tbody = document.getElementById('tbodyImportSelection');
+            tbody.innerHTML = linksParaImportarPendentes.map((task, i) => `
+                <tr>
+                    <td><input type="checkbox" class="import-checkbox form-check-input" checked data-index="${i}"></td>
+                    <td><img src="${task.url}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; border:1px solid var(--border);"></td>
+                    <td class="text-white">
+                        <div class="fw-bold mb-1" style="font-size:11px; opacity:0.8;">Atual: ${task.nome}</div>
+                        <input type="text" id="customImportName_${i}" class="form-control form-control-sm text-white" style="background-color: var(--surface2); border-color: var(--border);" placeholder="Opcional: Novo Nome p/ Banco">
+                    </td>
+                </tr>
+            `).join('');
+
+            const modalEl = document.getElementById('modalImportSelection');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        function toggleSelectAllImports(master) {
+            document.querySelectorAll('.import-checkbox').forEach(cb => cb.checked = master.checked);
+        }
+
+        async function confirmarImportacaoExterna() {
+            const checkboxes = document.querySelectorAll('.import-checkbox:checked');
+            if(checkboxes.length === 0) return await customAlert("Aviso", "Selecione pelo menos um item para importar!");
+
+            const modalEl = document.getElementById('modalImportSelection');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if(modal) modal.hide();
+
+            let concluidos = 0;
+            const tasksToRun = Array.from(checkboxes).map(cb => {
+                const idx = cb.getAttribute('data-index');
+                const customNameInput = document.getElementById(`customImportName_${idx}`);
+                const customName = customNameInput ? customNameInput.value.trim() : "";
+                return {
+                    ...linksParaImportarPendentes[idx],
+                    finalName: customName !== "" ? customName : linksParaImportarPendentes[idx].nome
+                };
+            });
+
+            for(let task of tasksToRun) {
+                salvarNoBancoComSufixo(task.finalName, task.url);
+                concluidos++;
+            }
+
+            await salvarBancoNuvem();
+            renderizarTabelas();
+            renderizarGaleria();
+            logAudit(`${getCurrentRealEmail()} salvou ${concluidos} links diretos da planilha no banco.`, 'imagens');
+            
+            customAlert("Concluído", `Importação finalizada com sucesso!\nForam salvos ${concluidos} links no banco.`);
+        }
+
+        // ==========================================
+        // CHAMADAS DE MODAL (GOOGLE E IA MANUAL)
+        // ==========================================
+        function abrirAbaGoogle() {
+            customAlert("Google Imagens", "A nova guia abrirá direto no Google Imagens. Após escolher a imagem, clique com botão direito nela, selecione 'Copiar endereço da imagem' e cole o link na opção de 'Vincular Existente'.");
+            const nome = document.getElementById('cdInput1') && document.getElementById('cdInput1').value ? document.getElementById('cdInput1').value.trim() : "";
+            const query = encodeURIComponent((nome || "comida") + " png transparente");
+            window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
+        }
+
+        function abrirModalBuscaGoogle() {
+            const modalEl = document.getElementById('modalBuscarGoogle');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        function abrirModalMudarImagemBanco() {
+            const modalEl = document.getElementById('modalGerarImagem');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        function abrirModalLinkManual() {
+            customPrompt("Vincular Imagem Existente", "Cole o link direto da imagem e dê um nome para ela:", "Nome de Referência", "", "URL da Imagem", "").then(async (data) => {
+                if(data && data.val1.trim() !== "" && data.val2.trim() !== "") {
+                    salvarNoBancoComSufixo(data.val1.trim(), data.val2.trim());
+                    renderizarGaleria(); 
+                    await salvarBancoNuvem(); 
+                    logAudit(`${getCurrentRealEmail()} vinculou link manual para: ${data.val1}`, 'imagens');
+                    showToast();
+                }
+            });
+        }
+
+        function abrirModalMudarImagem(tabela, index) {
+            targetChangeTable = tabela;
+            targetChangeIndex = index;
+            const item = dadosCardapio[tabela][index];
+            const nomeItem = tabela === 'produtos' ? item.produto : item.item;
+            document.getElementById('aiImgName').value = nomeItem || '';
+            document.getElementById('aiImgPrompt').value = item.descricao || '';
+            const modalEl = document.getElementById('modalGerarImagem');
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        let arquivosParaUpload = [];
+
+        document.getElementById('multiImgInput').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 10) { customAlert("Aviso", "Máximo 10 imagens por vez!"); files.splice(10); }
+            arquivosParaUpload = files;
+            renderizarStagingArea();
+            e.target.value = '';
+        });
+
+        function renderizarStagingArea() {
+            const container = document.getElementById('stagingArea');
+            const btnUpload = document.getElementById('btnUploadAll');
+            if (arquivosParaUpload.length === 0) {
+                container.classList.add('d-none'); btnUpload.classList.add('d-none'); return;
+            }
+            container.innerHTML = '';
+            arquivosParaUpload.forEach((file, index) => {
+                const urlPreview = URL.createObjectURL(file);
+                const nomePadrao = file.name.replace(/\.[^/.]+$/, ""); 
+                container.innerHTML += `
+                    <div class="col-md-3 col-sm-4">
+                        <div class="img-preview-card">
+                            <button class="btn-remove-preview" onclick="removerImagemStaging(${index})">X</button>
+                            <img src="${urlPreview}" class="img-preview">
+                            <input type="text" class="form-control form-control-sm text-white" style="background:var(--surface)" id="stagedName_${index}" value="${nomePadrao}">
+                        </div>
+                    </div>`;
+            });
+            container.classList.remove('d-none'); btnUpload.classList.remove('d-none');
+        }
+
+        function removerImagemStaging(index) { arquivosParaUpload.splice(index, 1); renderizarStagingArea(); }
+
+        async function fazerUploadImgBB(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            try {
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: formData });
+                const result = await response.json();
+                if (result.success) return result.data.url;
+            } catch (e) {} return null;
+        }
+
+        document.getElementById('btnUploadAll').addEventListener('click', async () => {
+            const status = document.getElementById('uploadingImgStatus');
+            const btn = document.getElementById('btnUploadAll');
+            status.classList.remove('d-none'); btn.disabled = true;
+
+            let logNames = [];
+            for (let i = 0; i < arquivosParaUpload.length; i++) {
+                const file = arquivosParaUpload[i];
+                const inputName = document.getElementById(`stagedName_${i}`).value.trim();
+                const nomeFinal = inputName || file.name.replace(/\.[^/.]+$/, "");
+                const url = await fazerUploadImgBB(file);
+                if (url) {
+                    salvarNoBancoComSufixo(nomeFinal, url);
+                    logNames.push(nomeFinal);
+                }
+            }
+
+            await salvarBancoNuvem();
+            arquivosParaUpload = [];
+            renderizarStagingArea();
+            renderizarGaleria();
+            status.classList.add('d-none'); btn.disabled = false;
+            
+            if(logNames.length > 0) logAudit(`${getCurrentRealEmail()} fez upload de ${logNames.length} arquivos físicos.`, 'imagens');
+            customAlert("Sucesso", "Imagens enviadas e salvas na nuvem da equipe!");
+        });
+
+        function showToast() {
+            const toast = document.getElementById('successToast');
+            toast.classList.remove('d-none'); toast.style.opacity = "1";
+            setTimeout(() => { toast.style.opacity = "0"; setTimeout(() => toast.classList.add('d-none'), 500); }, 2500);
+        }
+
+        async function gerarESalvarImagemIA() {
+            const name = document.getElementById('aiImgName').value.trim();
+            const prompt = document.getElementById('aiImgPrompt').value.trim();
+            if(!name) return customAlert("Atenção", "Preencha ao menos o nome do item para a IA!");
+
+            document.getElementById('aiImgLoading').classList.remove('d-none');
+            
+            try {
+                let fullPrompt = name;
+                if(prompt && prompt !== "") fullPrompt += ` with ${prompt}`;
+                fullPrompt += `, professional food photography, hyper-realistic, high resolution, 4k, studio lighting, isolated on solid white background, empty background`;
+                
+                const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?nologo=true&model=flux`;
+                const res = await fetch(imgUrl);
+                const blob = await res.blob();
+                const file = new File([blob], `${name}.jpg`, { type: "image/jpeg" });
+                const finalUrl = await fazerUploadImgBB(file);
+
+                if(finalUrl) {
+                    salvarNoBancoComSufixo(name, finalUrl);
+                    if (targetChangeTable && targetChangeIndex !== null) {
+                        let currentItem = dadosCardapio[targetChangeTable][targetChangeIndex];
+                        currentItem.imagem = finalUrl;
+                        const urls = buscarUrlsNoBanco(name);
+                        if (urls.length > 0) {
+                            currentItem.opcoes_imagem = urls;
+                            currentItem.index_imagem = urls.indexOf(finalUrl);
+                        }
+                        renderizarTabelas(); 
+                    }
+                    targetChangeTable = null; targetChangeIndex = null;
+                    await salvarBancoNuvem();
+                    renderizarGaleria();
+                    
+                    const modalEl = document.getElementById('modalGerarImagem');
+                    if(modalEl) {
+                        const modal = bootstrap.Modal.getInstance(modalEl);
+                        if(modal) modal.hide();
+                    }
+                    
+                    document.getElementById('aiImgName').value = '';
+                    document.getElementById('aiImgPrompt').value = '';
+                    
+                    logAudit(`${getCurrentRealEmail()} gerou imagem via IA: ${name}`, 'imagens');
+                    showToast();
+                }
+            } catch(e) {
+                customAlert("Erro", "Erro ao gerar imagem: " + e.message);
+            } finally {
+                document.getElementById('aiImgLoading').classList.add('d-none');
+            }
+        }
+
+        const fileInputBase = document.getElementById('fileInput');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const pizzaToggle = document.getElementById('pizzaToggle');
+        const pizzaOptionsPanel = document.getElementById('pizzaOptionsPanel');
+
+        pizzaToggle.addEventListener('change', (e) => {
+            if (e.target.checked) pizzaOptionsPanel.classList.remove('d-none');
+            else pizzaOptionsPanel.classList.add('d-none');
+        });
+
+        fileInputBase.addEventListener('change', (e) => {
+            arquivosBase = arquivosBase.concat(Array.from(e.target.files));
+            atualizarListaArquivosBase(); fileInputBase.value = '';
+        });
+
+        function atualizarListaArquivosBase() {
+            fileListContainer.innerHTML = '';
+            arquivosBase.forEach((file, index) => {
+                const isImage = file.type.startsWith('image/');
+                const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv');
+                const previewUrl = isImage ? URL.createObjectURL(file) : ''; 
+                
+                let miniaturaHTML = '';
+                if(isImage) { miniaturaHTML = `<a href="${previewUrl}" target="_blank"><img src="${previewUrl}" class="preview-mini"></a>`; } 
+                else if (isExcel) { miniaturaHTML = `<span style="font-size: 18px; margin-right: 8px;">📊</span>`; } 
+                else { miniaturaHTML = `<span style="font-size: 18px; margin-right: 8px;">📄</span>`; }
+
+                const chip = document.createElement('div'); chip.className = 'file-chip';
+                chip.innerHTML = `${miniaturaHTML} <span title="${file.name}">${file.name}</span> <button class="btn-remove-file" onclick="removerArquivoBase(${index})">X</button>`;
+                fileListContainer.appendChild(chip);
+            });
+        }
+
+        function removerArquivoBase(index) { arquivosBase.splice(index, 1); atualizarListaArquivosBase(); }
+
+        document.getElementById('clearButton').addEventListener('click', () => {
+            document.getElementById('textInput').value = ''; arquivosBase = []; dadosCardapio = { produtos: [], adicionais: [] };
+            atualizarListaArquivosBase(); renderizarTabelas(); document.getElementById('resumoPanel').classList.add('d-none');
+        });
+
+        function atualizarDado(tabela, index, campo, valor) {
+            dadosCardapio[tabela][index][campo] = valor; renderizarResumo();
+        }
+
+        function atualizarNomeItem(tabela, index, novoNome) {
+            const campoNome = tabela === 'produtos' ? 'produto' : 'item';
+            dadosCardapio[tabela][index][campoNome] = novoNome;
+            
+            if (document.getElementById('autoLinkImgToggle') && document.getElementById('autoLinkImgToggle').checked) {
+                const urls = buscarUrlsNoBanco(novoNome);
+                if (urls.length > 0) {
+                    dadosCardapio[tabela][index].opcoes_imagem = urls;
+                    dadosCardapio[tabela][index].index_imagem = 0;
+                    dadosCardapio[tabela][index].imagem = urls[0];
+                    renderizarTabelas(); renderizarResumo();
+                    return; 
+                }
+            }
+            
+            dadosCardapio[tabela][index].imagem = ""; 
+            renderizarTabelas(); renderizarResumo();
+            
+            if (document.getElementById('autoGenerateImgToggle') && document.getElementById('autoGenerateImgToggle').checked && novoNome.trim() !== "") {
+                const desc = dadosCardapio[tabela][index].descricao || "";
+                if(!isGeneratingImages) processarFilaImagens([{ type: tabela, index: index, name: novoNome, desc: desc }]);
+            }
+        }
+
+        function adicionarProduto() {
+            dadosCardapio.produtos.push({ cor: "Padrão", categoria: "", ativo: "Sim", disponibilidade: "Delivery e Salão", tipo: "Comida", produto: "", preco: 0.00, descricao: "", adicional: "", codigo: "", imagem: "", pesavel: "Não", local_impressao: "Cozinha 1" });
+            renderizarTabelas();
+        }
+
+        function adicionarAdicional() {
+            dadosCardapio.adicionais.push({ tipo: "Outro", adicional: "", minimo: 0, maximo: 1, ativo: "Sim", item: "", preco: 0.00, descricao: "", codigo: "", imagem: "", local_impressao: "Cozinha 1" });
+            renderizarTabelas();
+        }
+
+        function removerItem(tabela, index) { dadosCardapio[tabela].splice(index, 1); renderizarTabelas(); }
+
+        function ciclarImagem(tabela, index) {
+            let item = dadosCardapio[tabela][index];
+            if (item.opcoes_imagem && item.opcoes_imagem.length > 1) {
+                item.index_imagem = (item.index_imagem + 1) % item.opcoes_imagem.length;
+                item.imagem = item.opcoes_imagem[item.index_imagem];
+                renderizarTabelas();
+            }
+        }
+
+        async function cancelarGeracaoImagens() {
+            if(await customConfirm("Cancelar IA", "Deseja realmente cancelar a geração das imagens restantes?")) {
+                cancelImageGeneration = true;
+            }
+        }
+
+        function gerarImagensFaltantesEmLote() {
+            if(isGeneratingImages) return customAlert("Atenção", "A geração já está em andamento!");
+            let filaGeracao = [];
+            dadosCardapio.produtos.forEach((p, index) => { if (!p.imagem && p.produto) filaGeracao.push({ type: 'produtos', index: index, name: p.produto, desc: p.descricao }); });
+            dadosCardapio.adicionais.forEach((a, index) => { if (!a.imagem && a.item) filaGeracao.push({ type: 'adicionais', index: index, name: a.item, desc: a.descricao }); });
+
+            if (filaGeracao.length > 0) processarFilaImagens(filaGeracao);
+            else customAlert("Tudo Pronto!", "Todos os itens válidos já possuem imagem.");
+        }
+
+        async function processarFilaImagens(fila) {
+            isGeneratingImages = true; cancelImageGeneration = false; renderizarTabelas(); 
+            const total = fila.length; let concluidos = 0;
+            
+            const progContainer = document.getElementById('globalImgProgress');
+            const progCount = document.getElementById('imgProgressCount');
+            progContainer.classList.remove('d-none'); progCount.innerText = `0/${total}`;
+            
+            for (let i = 0; i < fila.length; i += 4) {
+                if (cancelImageGeneration) break;
+                const chunk = fila.slice(i, i + 4);
+                
+                await Promise.all(chunk.map(async (task) => {
+                    try {
+                        const currentItem = dadosCardapio[task.type][task.index];
+                        if (currentItem.imagem) { concluidos++; return; }
+
+                        const urlExistentes = buscarUrlsNoBanco(task.name);
+                        if(urlExistentes.length > 0) {
+                            currentItem.imagem = urlExistentes[0];
+                            currentItem.opcoes_imagem = urlExistentes;
+                            currentItem.index_imagem = 0;
+                            concluidos++;
+                            return;
+                        }
+
+                        let promptCompleto = task.name;
+                        if(task.desc && task.desc.trim() !== "") promptCompleto += ` with ${task.desc.trim()}`;
+                        const prompt = `${promptCompleto}, professional food photography, hyper-realistic, high resolution, 4k, studio lighting, isolated on solid white background, empty background`;
+                        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?nologo=true&model=flux`;
+                        
+                        const res = await fetch(imgUrl);
+                        const blob = await res.blob();
+                        const finalUrl = await fazerUploadImgBB(new File([blob], `${task.name}.jpg`, { type: "image/jpeg" }));
+                        
+                        if (finalUrl) {
+                            salvarNoBancoComSufixo(task.name, finalUrl);
+                            currentItem.imagem = finalUrl;
+                            const urls = buscarUrlsNoBanco(task.name);
+                            if (urls.length > 0) { currentItem.opcoes_imagem = urls; currentItem.index_imagem = urls.indexOf(finalUrl) > -1 ? urls.indexOf(finalUrl) : 0; }
+                        }
+                    } catch(e) {} finally { concluidos++; }
+                }));
+                progCount.innerText = `${concluidos}/${total}`;
+                renderizarGaleria(); renderizarTabelas();
+            }
+            
+            progContainer.classList.add('d-none'); isGeneratingImages = false;
+            await salvarBancoNuvem(); renderizarTabelas();
+            
+            if (!cancelImageGeneration) {
+                logAudit(`${getCurrentRealEmail()} utilizou a Geração Automática em Massa (${total} fotos).`, 'imagens');
+                const successMsg = document.getElementById('globalImgComplete');
+                successMsg.classList.remove('d-none');
+                setTimeout(() => { document.addEventListener('click', function hideSuccess() { successMsg.classList.add('d-none'); document.removeEventListener('click', hideSuccess); }, { once: true }); }, 100);
+            }
+        }
+
+        document.getElementById('processButton').addEventListener('click', async () => {
+            const texto = document.getElementById('textInput').value.trim();
+            if (!texto && arquivosBase.length === 0) return customAlert("Atenção", "Cole o texto ou anexe um arquivo base!");
+
+            const temImagem = arquivosBase.some(f => f.type.startsWith('image/'));
+            
+            const useAIToggle = document.getElementById('useAIToggle');
+            if (temImagem && (!useAIToggle || !useAIToggle.checked)) {
+                return customAlert("Atenção", "Para ler imagens/PDFs, a Revisão por IA precisa estar ATIVADA.");
+            }
+
+            const loading = document.getElementById('loading');
+            const loadingText = document.getElementById('loadingText');
+            loading.classList.remove('d-none'); loadingText.classList.remove('d-none');
+            document.getElementById('processButton').disabled = true;
+
+            try {
+                loadingText.innerText = "Extraindo cardápio...";
+                const formData = new FormData();
+                if (texto) formData.append("texto", texto);
+                arquivosBase.forEach(file => formData.append("files", file));
+                
+                formData.append("use_ai", (useAIToggle && useAIToggle.checked) ? "true" : "false");
+                
+                formData.append("pizza_flag", document.getElementById('pizzaToggle').checked);
+                formData.append("pizza_sabores", document.getElementById('pizzaSabores').value);
+                formData.append("pizza_doces", document.getElementById('pizzaDocesToggle').checked);
+                formData.append("variacoes_separadas", document.getElementById('variacoesToggle').checked);
+
+                const nomesBanco = Object.values(bancoImagens).map(img => img.nome).filter(n => n).join(" | ");
+                formData.append("banco_imagens", nomesBanco);
+
+                if(configNuvem.use_api_rotation && configNuvem.gemini_keys && configNuvem.gemini_keys.length > 0) {
+                    const randomKey = configNuvem.gemini_keys[Math.floor(Math.random() * configNuvem.gemini_keys.length)];
+                    formData.append("gemini_key", randomKey);
+                }
+
+                const response = await fetch("https://cardapia.onrender.com", { method: "POST", body: formData });
+                if (!response.ok) throw new Error("Erro no servidor de IA. Verifique se o backend está rodando na porta 8080.");
+                
+                dadosCardapio = await response.json();
+
+                const autoLink = document.getElementById('autoLinkImgToggle');
+                if (autoLink && autoLink.checked) {
+                    dadosCardapio.produtos.forEach(p => {
+                        const urls = buscarUrlsNoBanco(p.produto);
+                        if (urls.length > 0) { p.opcoes_imagem = urls; p.index_imagem = Math.floor(Math.random() * urls.length); p.imagem = urls[p.index_imagem]; }
+                    });
+                    dadosCardapio.adicionais.forEach(a => {
+                        if(!a.item) return;
+                        const urls = buscarUrlsNoBanco(a.item);
+                        if (urls.length > 0) { a.opcoes_imagem = urls; a.index_imagem = Math.floor(Math.random() * urls.length); a.imagem = urls[a.index_imagem]; }
+                    });
+                }
+
+                renderizarTabelas();
+
+                const autoGen = document.getElementById('autoGenerateImgToggle');
+                if (autoGen && autoGen.checked) {
+                    let filaGeracao = [];
+                    dadosCardapio.produtos.forEach((p, index) => { if (!p.imagem && p.produto) filaGeracao.push({ type: 'produtos', index: index, name: p.produto, desc: p.descricao }); });
+                    dadosCardapio.adicionais.forEach((a, index) => { if (!a.imagem && a.item) filaGeracao.push({ type: 'adicionais', index: index, name: a.item, desc: a.descricao }); });
+                    if (filaGeracao.length > 0) processarFilaImagens(filaGeracao);
+                }
+
+            } catch (error) {
+                customAlert("Erro na Leitura", error.message);
+            } finally {
+                loading.classList.add('d-none'); loadingText.classList.add('d-none');
+                document.getElementById('processButton').disabled = false;
+            }
+        });
+
+        function renderizarTabelas(p = null) {
+            if(!p) {
+                p = currentUser ? currentUser.perms : {};
+                if(currentUser && isMasterAccount(currentUser.email)) { p.can_gen_manual = true; p.can_delete_items = true; } 
+            }
+
+            const showPesavel = document.getElementById('colPesavel').checked;
+            const showLocal = document.getElementById('colLocalImp').checked;
+            const showLocalAdic = document.getElementById('colLocalImpAdic').checked;
+
+            const temFaltanteProd = dadosCardapio.produtos.some(prod => !prod.imagem && prod.produto);
+            const temFaltanteAdic = dadosCardapio.adicionais.some(a => !a.imagem && a.item);
+            
+            const btnFaltanteProd = document.getElementById('btnGerarFaltantesProd');
+            if(btnFaltanteProd) {
+                if(temFaltanteProd && !isGeneratingImages && p.can_gen_manual) btnFaltanteProd.classList.remove('d-none');
+                else btnFaltanteProd.classList.add('d-none');
+            }
+            const btnFaltanteAdic = document.getElementById('btnGerarFaltantesAdic');
+            if(btnFaltanteAdic) {
+                if(temFaltanteAdic && !isGeneratingImages && p.can_gen_manual) btnFaltanteAdic.classList.remove('d-none');
+                else btnFaltanteAdic.classList.add('d-none');
+            }
+
+            let thProd = `<th>COR</th><th>CATEGORIA</th><th>ATIVO</th><th>DISPONIBILIDADE</th><th>TIPO</th><th>PRODUTO</th><th>PREÇO</th><th>DESCRIÇÃO</th><th>ADICIONAL</th><th>CÓDIGO</th><th>IMAGEM</th>`;
+            if (showPesavel) thProd += `<th>PESÁVEL</th>`;
+            if (showLocal) thProd += `<th>LOCAL IMPRESSÃO</th>`;
+            thProd += `<th>AÇÕES</th>`;
+            document.getElementById('theadProdutos').innerHTML = thProd;
+
+            const tbodyP = document.getElementById('tbodyProdutos');
+            if (dadosCardapio.produtos.length > 0) {
+                tbodyP.innerHTML = dadosCardapio.produtos.map((p_item, i) => {
+                    
+                    let acoes = ``;
+                    if (p.can_delete_items || (currentUser && currentUser.role === 'admin')) acoes += `<button class="btn btn-sm btn-outline-danger me-1" onclick="removerItem('produtos', ${i})" title="Excluir produto da lista">🗑️</button>`;
+                    if (p.can_gen_manual) acoes += `<button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalMudarImagem('produtos', ${i})" title="Mudar/Gerar imagem com IA">✨</button>`;
+                    if (p_item.opcoes_imagem && p_item.opcoes_imagem.length > 1) {
+                        acoes += `<button class="btn btn-sm btn-outline-info" onclick="ciclarImagem('produtos', ${i})" title="Trocar imagem existente">🔄️</button>`;
+                    }
+
+                    let opacityStyle = isGeneratingImages ? '' : 'style="opacity: 0.3;"';
+                    let htmlImagem = p_item.imagem ? `
+                        <div class="table-img-container">
+                            <a href="${p_item.imagem}" target="_blank" class="table-img-wrapper"><img src="${p_item.imagem}" class="table-img-preview"></a>
+                            <input type="text" class="input-cell" placeholder="URL da img" value="${p_item.imagem || ''}" onchange="atualizarDado('produtos', ${i}, 'imagem', this.value); renderizarTabelas();">
+                        </div>
+                    ` : `
+                        <div class="table-img-container">
+                            <div class="table-img-loading" title="Aguardando IA..." ${opacityStyle}><span style="font-size:12px;">⏳</span></div>
+                            <input type="text" class="input-cell" placeholder="URL da img" value="${p_item.imagem || ''}" onchange="atualizarDado('produtos', ${i}, 'imagem', this.value); renderizarTabelas();">
+                        </div>
+                    `;
+
+                    let td = `
+                        <td>
+                            <select class="input-cell" onchange="atualizarDado('produtos', ${i}, 'cor', this.value)">
+                                <option value="Amarelo" ${p_item.cor === 'Amarelo' ? 'selected' : ''}>Amarelo</option>
+                                <option value="Azul" ${p_item.cor === 'Azul' ? 'selected' : ''}>Azul</option>
+                                <option value="Cinza" ${p_item.cor === 'Cinza' ? 'selected' : ''}>Cinza</option>
+                                <option value="Laranja" ${p_item.cor === 'Laranja' ? 'selected' : ''}>Laranja</option>
+                                <option value="Marrom" ${p_item.cor === 'Marrom' ? 'selected' : ''}>Marrom</option>
+                                <option value="Padrão" ${!p_item.cor || p_item.cor === 'Padrão' ? 'selected' : ''}>Padrão</option>
+                                <option value="Preto" ${p_item.cor === 'Preto' ? 'selected' : ''}>Preto</option>
+                                <option value="Rosa" ${p_item.cor === 'Rosa' ? 'selected' : ''}>Rosa</option>
+                                <option value="Verde" ${p_item.cor === 'Verde' ? 'selected' : ''}>Verde</option>
+                                <option value="Vermelho" ${p_item.cor === 'Vermelho' ? 'selected' : ''}>Vermelho</option>
+                                <option value="Violeta" ${p_item.cor === 'Violeta' ? 'selected' : ''}>Violeta</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="input-cell" value="${p_item.categoria || ''}" onchange="atualizarDado('produtos', ${i}, 'categoria', this.value)"></td>
+                        <td>
+                            <select class="input-cell" onchange="atualizarDado('produtos', ${i}, 'ativo', this.value)">
+                                <option value="Sim" ${p_item.ativo === 'Sim' ? 'selected' : ''}>Sim</option>
+                                <option value="Não" ${p_item.ativo === 'Não' ? 'selected' : ''}>Não</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select class="input-cell" onchange="atualizarDado('produtos', ${i}, 'disponibilidade', this.value)">
+                                <option value="Delivery e Salão" ${p_item.disponibilidade === 'Delivery e Salão' ? 'selected' : ''}>Delivery e Salão</option>
+                                <option value="Delivery" ${p_item.disponibilidade === 'Delivery' ? 'selected' : ''}>Delivery</option>
+                                <option value="Salão" ${p_item.disponibilidade === 'Salão' ? 'selected' : ''}>Salão</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select class="input-cell" onchange="atualizarDado('produtos', ${i}, 'tipo', this.value)">
+                                <option value="Comida" ${p_item.tipo === 'Comida' ? 'selected' : ''}>Comida</option>
+                                <option value="Bebida" ${p_item.tipo === 'Bebida' ? 'selected' : ''}>Bebida</option>
+                                <option value="Pizza" ${p_item.tipo === 'Pizza' ? 'selected' : ''}>Pizza</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="input-cell" value="${p_item.produto || ''}" onchange="atualizarNomeItem('produtos', ${i}, this.value)"></td>
+                        <td><input type="number" step="0.01" class="input-cell" value="${p_item.preco}" onchange="atualizarDado('produtos', ${i}, 'preco', this.value)"></td>
+                        <td><input type="text" class="input-cell" value="${p_item.descricao || ''}" onchange="atualizarDado('produtos', ${i}, 'descricao', this.value)"></td>
+                        <td><input type="text" class="input-cell" value="${p_item.adicional || ''}" onchange="atualizarDado('produtos', ${i}, 'adicional', this.value)"></td>
+                        <td><input type="text" class="input-cell" value="${p_item.codigo || ''}" onchange="atualizarDado('produtos', ${i}, 'codigo', this.value)"></td>
+                        <td><div id="img-cell-produtos-${i}">${htmlImagem}</div></td>`;
+                    
+                    if (showPesavel) {
+                        td += `<td>
+                                <select class="input-cell" onchange="atualizarDado('produtos', ${i}, 'pesavel', this.value)">
+                                    <option value="Sim" ${p_item.pesavel === 'Sim' ? 'selected' : ''}>Sim</option>
+                                    <option value="Não" ${p_item.pesavel === 'Não' ? 'selected' : ''}>Não</option>
+                                </select>
+                               </td>`;
+                    }
+                    if (showLocal) {
+                        td += `<td>
+                                <select class="input-cell" onchange="atualizarDado('produtos', ${i}, 'local_impressao', this.value)">
+                                    <option value="Caixa" ${p_item.local_impressao === 'Caixa' ? 'selected' : ''}>Caixa</option>
+                                    <option value="Copa" ${p_item.local_impressao === 'Copa' ? 'selected' : ''}>Copa</option>
+                                    <option value="Cozinha 1" ${!p_item.local_impressao || p_item.local_impressao === 'Cozinha 1' ? 'selected' : ''}>Cozinha 1</option>
+                                    <option value="Cozinha 2" ${p_item.local_impressao === 'Cozinha 2' ? 'selected' : ''}>Cozinha 2</option>
+                                    <option value="Cozinha 3" ${p_item.local_impressao === 'Cozinha 3' ? 'selected' : ''}>Cozinha 3</option>
+                                    <option value="Cozinha 4" ${p_item.local_impressao === 'Cozinha 4' ? 'selected' : ''}>Cozinha 4</option>
+                                    <option value="Cozinha 5" ${p_item.local_impressao === 'Cozinha 5' ? 'selected' : ''}>Cozinha 5</option>
+                                    <option value="Não imprimir" ${p_item.local_impressao === 'Não imprimir' ? 'selected' : ''}>Não imprimir</option>
+                                </select>
+                               </td>`;
+                    }
+                    td += `<td class="text-nowrap">${acoes}</td>`;
+                    return `<tr>${td}</tr>`;
+                }).join('');
+            } else {
+                tbodyP.innerHTML = `<tr><td colspan="${showPesavel&&showLocal?14:12}" class="text-center text-white py-5">🍽️ Nenhum produto na lista.</td></tr>`;
+            }
+            document.getElementById('prodCounter').innerText = `${dadosCardapio.produtos.length} produto(s)`;
+
+            let thAdic = `<th>TIPO</th><th>ADICIONAL</th><th>MÍNIMO</th><th>MÁXIMO</th><th>ATIVO</th><th>ITEM</th><th>PREÇO</th><th>DESCRIÇÃO</th><th>CÓDIGO</th><th>IMAGEM</th>`;
+            if (showLocalAdic) thAdic += `<th>LOCAL IMPRESSÃO</th>`;
+            thAdic += `<th>AÇÕES</th>`;
+            document.getElementById('theadAdicionais').innerHTML = thAdic;
+
+            const tbodyA = document.getElementById('tbodyAdicionais');
+            if (dadosCardapio.adicionais.length > 0) {
+                tbodyA.innerHTML = dadosCardapio.adicionais.map((a, i) => {
+                    
+                    let acoes = ``;
+                    if (p.can_delete_items || (currentUser && currentUser.role === 'admin')) acoes += `<button class="btn btn-sm btn-outline-danger me-1" onclick="removerItem('adicionais', ${i})" title="Excluir adicional da lista">🗑️</button>`;
+                    if (p.can_gen_manual) acoes += `<button class="btn btn-sm btn-outline-warning me-1" onclick="abrirModalMudarImagem('adicionais', ${i})" title="Mudar/Gerar imagem com IA">✨</button>`;
+                    if (a.opcoes_imagem && a.opcoes_imagem.length > 1) {
+                        acoes += `<button class="btn btn-sm btn-outline-info" onclick="ciclarImagem('adicionais', ${i})" title="Trocar imagem existente">🔄️</button>`;
+                    }
+
+                    let opacityStyle = isGeneratingImages ? '' : 'style="opacity: 0.3;"';
+                    let htmlImagemAdic = a.imagem ? `
+                        <div class="table-img-container">
+                            <a href="${a.imagem}" target="_blank" class="table-img-wrapper"><img src="${a.imagem}" class="table-img-preview"></a>
+                            <input type="text" class="input-cell" placeholder="URL da img" value="${a.imagem || ''}" onchange="atualizarDado('adicionais', ${i}, 'imagem', this.value); renderizarTabelas();">
+                        </div>
+                    ` : `
+                        <div class="table-img-container">
+                            <div class="table-img-loading" title="Aguardando IA..." ${opacityStyle}><span style="font-size:12px;">⏳</span></div>
+                            <input type="text" class="input-cell" placeholder="URL da img" value="${a.imagem || ''}" onchange="atualizarDado('adicionais', ${i}, 'imagem', this.value); renderizarTabelas();">
+                        </div>
+                    `;
+
+                    let td = `
+                        <td>
+                            <select class="input-cell" onchange="atualizarDado('adicionais', ${i}, 'tipo', this.value)">
+                                <option value="Outro" ${a.tipo === 'Outro' ? 'selected' : ''}>Outro</option>
+                                <option value="Sabor Pizza" ${a.tipo === 'Sabor Pizza' ? 'selected' : ''}>Sabor Pizza</option>
+                                <option value="Borda Pizza" ${a.tipo === 'Borda Pizza' ? 'selected' : ''}>Borda Pizza</option>
+                                <option value="Massa Pizza" ${a.tipo === 'Massa Pizza' ? 'selected' : ''}>Massa Pizza</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="input-cell" value="${a.adicional || ''}" onchange="atualizarDado('adicionais', ${i}, 'adicional', this.value)"></td>
+                        <td><input type="number" class="input-cell" value="${a.minimo || '0'}" onchange="atualizarDado('adicionais', ${i}, 'minimo', this.value)"></td>
+                        <td><input type="number" class="input-cell" value="${a.maximo || '1'}" onchange="atualizarDado('adicionais', ${i}, 'maximo', this.value)"></td>
+                        <td>
+                            <select class="input-cell" onchange="atualizarDado('adicionais', ${i}, 'ativo', this.value)">
+                                <option value="Sim" ${a.ativo === 'Sim' ? 'selected' : ''}>Sim</option>
+                                <option value="Não" ${a.ativo === 'Não' ? 'selected' : ''}>Não</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="input-cell" value="${a.item || ''}" onchange="atualizarNomeItem('adicionais', ${i}, this.value)"></td>
+                        <td><input type="number" step="0.01" class="input-cell" value="${a.preco}" onchange="atualizarDado('adicionais', ${i}, 'preco', this.value)"></td>
+                        <td><input type="text" class="input-cell" value="${a.descricao || ''}" onchange="atualizarDado('adicionais', ${i}, 'descricao', this.value)"></td>
+                        <td><input type="text" class="input-cell" value="${a.codigo || ''}" onchange="atualizarDado('adicionais', ${i}, 'codigo', this.value)"></td>
+                        <td><div id="img-cell-adicionais-${i}">${htmlImagemAdic}</div></td>`;
+                    
+                    if (showLocalAdic) {
+                        td += `<td>
+                                <select class="input-cell" onchange="atualizarDado('adicionais', ${i}, 'local_impressao', this.value)">
+                                    <option value="Caixa" ${a.local_impressao === 'Caixa' ? 'selected' : ''}>Caixa</option>
+                                    <option value="Copa" ${a.local_impressao === 'Copa' ? 'selected' : ''}>Copa</option>
+                                    <option value="Cozinha 1" ${!a.local_impressao || a.local_impressao === 'Cozinha 1' ? 'selected' : ''}>Cozinha 1</option>
+                                    <option value="Cozinha 2" ${a.local_impressao === 'Cozinha 2' ? 'selected' : ''}>Cozinha 2</option>
+                                    <option value="Cozinha 3" ${a.local_impressao === 'Cozinha 3' ? 'selected' : ''}>Cozinha 3</option>
+                                    <option value="Cozinha 4" ${a.local_impressao === 'Cozinha 4' ? 'selected' : ''}>Cozinha 4</option>
+                                    <option value="Cozinha 5" ${a.local_impressao === 'Cozinha 5' ? 'selected' : ''}>Cozinha 5</option>
+                                    <option value="Não imprimir" ${a.local_impressao === 'Não imprimir' ? 'selected' : ''}>Não imprimir</option>
+                                </select>
+                               </td>`;
+                    }
+                    td += `<td class="text-nowrap">${acoes}</td>`;
+                    return `<tr>${td}</tr>`;
+                }).join('');
+            } else {
+                tbodyA.innerHTML = `<tr><td colspan="${showLocalAdic?12:11}" class="text-center text-white py-5">➕ Nenhum adicional na lista.</td></tr>`;
+            }
+            document.getElementById('adicCounter').innerText = `${dadosCardapio.adicionais.length} adicional(is)`;
+
+            renderizarResumo();
+        }
+
+        function renderizarResumo() {
+            if(document.querySelector('.nav-link.active').getAttribute('data-bs-target') === '#imagens') return;
+            if(dadosCardapio.produtos.length === 0 && dadosCardapio.adicionais.length === 0) return;
+            const prods = dadosCardapio.produtos;
+            const adics = dadosCardapio.adicionais;
+            document.getElementById('countProdutos').innerText = prods.length;
+            document.getElementById('countCategorias').innerText = new Set(prods.map(p => p.categoria).filter(c => c)).size;
+            document.getElementById('countAdicionaisItens').innerText = adics.length;
+            document.getElementById('countAdicionaisGrupos').innerText = new Set(adics.map(a => a.adicional).filter(a => a)).size;
+            document.getElementById('resumoPanel').classList.remove('d-none');
+        }
+
+        function baixarCSV(tipo) {
+            let arr = JSON.parse(JSON.stringify(dadosCardapio[tipo]));
+            if (!arr || arr.length === 0) return customAlert("Vazio", "Não há dados para exportar.");
+            
+            if (tipo === 'produtos') {
+                if (!document.getElementById('colPesavel').checked) arr.forEach(i => delete i.pesavel);
+                if (!document.getElementById('colLocalImp').checked) arr.forEach(i => delete i.local_impressao);
+            }
+            if (tipo === 'adicionais') {
+                if (!document.getElementById('colLocalImpAdic').checked) arr.forEach(i => delete i.local_impressao);
+            }
+
+            const chaves = Object.keys(arr[0]).filter(k => k !== 'opcoes_imagem' && k !== 'index_imagem');
+            const cabecalho = chaves.join(';') + '\n';
+            const linhas = arr.map(obj => chaves.map(k => `"${obj[k] || ''}"`).join(';')).join('\n');
+            const blob = new Blob(["\ufeff" + cabecalho + linhas], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `cardapIA_${tipo}.csv`;
+            link.click();
+            logAudit(`${getCurrentRealEmail()} exportou CSV de ${tipo}.`, 'sistema');
+        }
+
+        // INIT
+        document.addEventListener('DOMContentLoaded', () => {
+            initAuth();
+        });
+    </script>
+</body>
+</html>
