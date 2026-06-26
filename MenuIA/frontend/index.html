@@ -2003,8 +2003,8 @@
                     formData.append("gemini_key", randomKey);
                 }
 
-                const response = await fetch("https://cardapia.onrender.com", { method: "POST", body: formData });
-                if (!response.ok) throw new Error("Erro no servidor de IA. Verifique se o backend está rodando na porta 8080.");
+                const response = await fetch("https://cardapia.onrender.com/api/extract", { method: "POST", body: formData });
+                if (!response.ok) throw new Error("Erro no servidor de IA. Verifique se o backend está rodando na porta correta.");
                 
                 dadosCardapio = await response.json();
 
